@@ -7,22 +7,37 @@ export default function Page() {
         Tom Jeong
       </h1>
       <p className="mb-4">
-        {`Co-founder & CTO at `}
+        {`Hi, I'm Tom, co-founder and CTO of `}
         <a
           href="https://datafruit.ai"
           target="_blank"
           rel="noopener noreferrer"
           className="underline"
         >
-          Datafruit (YC S25)
+          Datafruit
         </a>
-        {`, where I build agentic systems for enterprise software teams. My work spans offline reinforcement learning, multi-agent orchestration, and production ML infrastructure.`}
+        {`.`}
       </p>
       <p className="mb-4">
-        {`Previously Head TA for CS 3511 Advanced Algorithms Honors at Georgia Tech, where I studied Computer Science (AI concentration) with a minor in Mathematics.`}
+        {` I'm  a recent grad from Georgia Institute of Technology where I studied Computer Science and Mathematics.`}
       </p>
       <p className="mb-4">
-        {`I'm currently researching LayerSkip for Mixture-of-Experts models and building QuDDPM — a quantum denoising diffusion model for studying information scrambling in chaotic quantum systems.`}
+        {`I'm currently the cofounder and CTO of `}
+        <a
+          href="https://www.ycombinator.com/companies/datafruit"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline"
+        >
+        Datafruit (YC S25)
+        </a>
+        {` where we are building AI systems for enterprise software implementation teams.`}
+      </p>
+      <p className="mb-4">
+        {`Currnelty building QuDDPM`}
+      </p>
+      <p className="mb-4">
+        {`You can reach out to me via LinkedIn`}
       </p>
       <div className="my-8">
         <BlogPosts />
