@@ -44,6 +44,15 @@ export default function Page() {
         >
           LinkedIn
         </a>
+        {` or `}
+        <a
+          href="https://cal.com/jeong-tom-cqkvqm/15min"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline"
+        >
+          book a call
+        </a>
         {`.`}
       </p>
       <div className="my-8">
