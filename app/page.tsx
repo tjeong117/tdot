@@ -24,14 +24,23 @@ export default function Page() {
       <p className="mb-4">
         {`I'm currently the cofounder and CTO of `}
         <a
+          href="https://datafruit.ai"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline"
+        >
+          Datafruit
+        </a>
+        {` (`}
+        <a
           href="https://www.ycombinator.com/companies/datafruit"
           target="_blank"
           rel="noopener noreferrer"
           className="underline"
         >
-        Datafruit (YC S25)
+          YC S25
         </a>
-        {` where we are building AI systems for enterprise software implementation teams.`}
+        {`) where we are building AI systems for enterprise software implementation teams.`}
       </p>
       <p className="mb-4">
         {`Currnelty building QuDDPM`}
