@@ -1,4 +1,5 @@
 import { BlogPosts } from 'app/components/posts'
+import { ResearchPapers } from 'app/components/research'
 
 export default function Page() {
   return (
@@ -46,6 +47,11 @@ export default function Page() {
         {`.`}
       </p>
       <div className="my-8">
+        <h2 className="font-semibold text-xl mb-4 tracking-tighter">Research</h2>
+        <ResearchPapers />
+      </div>
+      <div className="my-8">
+        <h2 className="font-semibold text-xl mb-4 tracking-tighter">Blog</h2>
         <BlogPosts />
       </div>
     </section>
