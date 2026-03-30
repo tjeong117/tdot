@@ -37,7 +37,7 @@ export default function Page() {
       <p className="mb-4">
         {`You can reach out to me via `}
         <a
-          href="https://www.linkedin.com/in/tomjeong"
+          href="https://www.linkedin.com/in/tomwsjeong"
           target="_blank"
           rel="noopener noreferrer"
           className="underline"
