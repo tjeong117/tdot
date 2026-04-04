@@ -92,6 +92,60 @@ Apply FFT, then constrain frequency-domain coefficients to discrete values. This
 
 The trade-off: We sacrifice some information capacity for robustness.
 
+## Practical Implication: Vocabulary Encoding
+
+**Question**: If we can't beat the information bounds, do we need as many qubits as classical bits to encode a vocabulary of size $V$?
+
+**Short answer**: Yes, fundamentally.
+
+To encode one of $V$ distinct tokens:
+
+**Classical**: $\lceil \log_2 V \rceil$ bits
+
+**Quantum**: $\lceil \log_2 V \rceil$ qubits
+
+Here's why:
+
+### Distinguishability Requires Orthogonal States
+
+To reliably distinguish between $V$ different tokens, we need $V$ orthogonal quantum states. In an $n$-qubit system, we have at most $2^n$ orthogonal basis states. Therefore:
+
+$$
+2^n \geq V \implies n \geq \log_2 V
+$$
+
+No amplitude tricks change this—orthogonality is a geometric constraint in Hilbert space.
+
+### Where Quantum Wins (Not in Storage)
+
+The advantage of quantum computing is **not** in data compression. It's in:
+
+1. **Superposition**: A token embedding can be in superposition:
+   $$
+   |\text{token}\rangle = \sum_{i=1}^{V} \alpha_i |i\rangle
+   $$
+   This lets us process multiple possibilities in parallel.
+
+2. **Entanglement**: Token relationships can be encoded non-locally:
+   $$
+   |\text{bigram}\rangle = \sum_{i,j} \alpha_{ij} |i\rangle \otimes |j\rangle
+   $$
+   With $n$ qubits, you can represent entangled states that have no classical equivalent description shorter than $2^n$ parameters.
+
+3. **Interference**: Quantum algorithms use constructive/destructive interference to amplify correct answers—this is where speedup comes from, not from packing more data per qubit.
+
+### The Trap for Quantum NLP
+
+If you're building a quantum transformer or language model, you might think: "Can I use fewer qubits than classical bits for my vocabulary?"
+
+**No.** For a vocabulary of 50k tokens, you need:
+- Classical: $\log_2(50000) \approx 16$ bits
+- Quantum: $\log_2(50000) \approx 16$ qubits
+
+**But**: The quantum version can process superpositions of tokens, entangle positional encodings with semantic embeddings in ways classical systems can't, and potentially offer speedups in attention mechanisms through Grover-like searches.
+
+The win is in **computation**, not **representation**.
+
 ## The Verdict
 
 **Can we use discretized amplitudes to encode more than $n$ bits on $n$ qubits?**
