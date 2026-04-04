@@ -1,0 +1,116 @@
+---
+title: 'Discretized Amplitude Encoding: Beyond 2^n?'
+publishedAt: '2026-04-03'
+summary: 'Exploring whether FFT-based amplitude discretization can encode richer information on fewer qubits—and why measurement makes this hard.'
+tag: 'research'
+---
+
+## The Intuition
+
+An $n$-qubit state has the form:
+
+$$
+|\psi\rangle = \sum_{i=0}^{2^n - 1} \alpha_i |i\rangle, \quad \sum_{i=0}^{2^n - 1} |\alpha_i|^2 = 1
+$$
+
+We typically encode information by choosing *which* basis states $|i\rangle$ have non-zero amplitudes. But the amplitudes $\alpha_i \in \mathbb{C}$ are continuous values—why not encode information in their *structure*?
+
+**Idea**: Apply FFT to the amplitude vector, discretize the frequency-domain coefficients into bins $[0, 0.01), [0.01, 0.02), \ldots$, and encode data in this discretized pattern. Could this let us pack more information into fewer qubits?
+
+## The Mathematical Reality
+
+### Problem 1: The Born Rule
+
+When we measure in the computational basis, we get outcome $i$ with probability:
+
+$$
+P(i) = |\alpha_i|^2 = |\langle i | \psi \rangle|^2
+$$
+
+We observe **probabilities**, not amplitudes. The phase information $\text{arg}(\alpha_i)$ is lost. To reconstruct the amplitude distribution, we need:
+- Many copies of $|\psi\rangle$ (violates no-cloning for unknown states)
+- Or quantum state tomography ($O(2^{2n})$ measurements for full reconstruction)
+
+### Problem 2: The Holevo Bound
+
+Even if we could prepare a state with rich amplitude structure, Holevo's theorem tells us the accessible classical information is bounded:
+
+$$
+\chi \leq S(\rho) = -\text{Tr}(\rho \log \rho)
+$$
+
+For a pure state $\rho = |\psi\rangle\langle\psi|$, we have $S(\rho) = 0$. The accessible information comes from the *ensemble* of states we prepare, not from a single state's amplitude structure.
+
+**Translation**: You can't extract arbitrarily many bits from a single quantum state by clever amplitude engineering.
+
+### Problem 3: State Preparation Complexity
+
+Preparing a state with arbitrary amplitudes $\{\alpha_i\}$ requires a circuit of depth $O(2^n)$ in the worst case. If our goal is efficiency, this defeats the purpose.
+
+## Where This *Does* Work
+
+Interestingly, similar ideas already exist:
+
+### 1. Quantum Fourier Transform (QFT)
+
+The QFT maps:
+
+$$
+|j\rangle \to \frac{1}{\sqrt{2^n}} \sum_{k=0}^{2^n-1} e^{2\pi ijk/2^n} |k\rangle
+$$
+
+This *is* encoding information in the frequency domain of amplitudes! Used in Shor's algorithm, phase estimation, etc.
+
+### 2. Amplitude Amplification
+
+Grover's algorithm and amplitude amplification manipulate amplitudes to increase the probability of measuring the correct answer:
+
+$$
+|\psi\rangle \to Q^k|\psi\rangle, \quad \text{where } Q \text{ amplifies target amplitudes}
+$$
+
+### 3. Quantum Signal Processing (QSP)
+
+QSP can implement polynomial transformations $P(\cos\theta)$ on amplitude distributions. This is essentially what you're describing—structured manipulation of amplitudes.
+
+## A Possible Hybrid Approach?
+
+Here's where it might get interesting:
+
+**Amplitude Discretization for Noise-Resilient Encoding**
+
+Instead of maximizing information density, what if we discretize amplitudes to create *error-correcting structure*?
+
+$$
+\alpha_i \in \{\epsilon_1, \epsilon_2, \ldots, \epsilon_m\} \quad \text{(discrete amplitude alphabet)}
+$$
+
+Apply FFT, then constrain frequency-domain coefficients to discrete values. This might give:
+- Reduced sensitivity to amplitude damping
+- Natural compression (like JPEG for quantum states)
+- Easier verification (finite precision arithmetic)
+
+The trade-off: We sacrifice some information capacity for robustness.
+
+## The Verdict
+
+**Can we use discretized amplitudes to encode more than $n$ bits on $n$ qubits?**
+
+**No**—Holevo bound and measurement constraints prevent extracting more classical information than the system's entropy allows.
+
+**But**: We can use amplitude structure for:
+- Algorithmic advantage (QFT, QSP already do this)
+- Noise-resilient encoding (discretization as a form of "quantization")
+- Quantum machine learning (amplitude patterns as features)
+
+The 2^n scaling is fundamental to how much *information* we can extract, but how we *structure* amplitudes still matters for computation and error correction.
+
+## Next: Testing Discretized QSP
+
+I'm curious whether variational circuits can learn to prepare "quantized amplitude" states that are more robust to noise. Might be worth implementing a small experiment:
+
+1. Parameterized circuit to prepare $|\psi(\theta)\rangle$
+2. Constraint: amplitudes must lie in discrete bins
+3. Measure noise resilience vs. standard amplitude encoding
+
+Worth exploring whether discretization helps or hurts in practice.
