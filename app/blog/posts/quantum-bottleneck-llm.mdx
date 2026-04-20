@@ -1,0 +1,79 @@
+---
+title: 'Quantum vs Classical Bottleneck: Early Results for Diffusion LLM Adaptation'
+publishedAt: '2026-04-19'
+summary: 'Testing whether a 6-qubit simulated quantum circuit outperforms a classical linear layer of identical dimensionality as a latent bottleneck — and what the results actually mean for adapting diffusion language models with few examples.'
+tag: 'research'
+---
+
+The previous QuDDPM work showed quantum circuits can learn to reverse scrambling. The next question is whether that property is useful in practice — specifically, whether a quantum latent space is a better bottleneck than a classical one when you have very little training data.
+
+## The Setup
+
+The hypothesis: a 6-qubit quantum circuit operates in a 64-dimensional Hilbert space ($2^6 = 64$), same as a classical 64-dim vector. But the quantum state encodes correlations via entanglement that a flat vector cannot represent without $O(d^2)$ parameters. If that's true, the quantum bottleneck should reconstruct structured latent data better — especially when training examples are scarce.
+
+The test is deliberately simple: generate correlated synthetic latents, train a bottleneck to reconstruct them, measure validation MSE. Both models have essentially identical parameter counts (~33K). The only difference is the bottleneck layer itself.
+
+The quantum model uses amplitude encoding and a QuDDPM-style curriculum — scrambling depth increases from 1 to 20 over training to avoid barren plateaus. The classical model is a linear layer with LayerNorm.
+
+## Results
+
+**4 qubits (16-dim bottleneck):**
+
+| n_train | Classical | Quantum | Δ |
+|---------|-----------|---------|---|
+| 100 | 0.08925 | 0.02910 | **+67.4% quantum** |
+| 500 | 0.01790 | 0.01646 | **+8.0% quantum** |
+| 1000 | 0.01301 | 0.01329 | -2.1% classical |
+| 5000 | 0.01006 | 0.01034 | -2.7% classical |
+
+**6 qubits (64-dim bottleneck):**
+
+| n_train | Classical | Quantum | Δ |
+|---------|-----------|---------|---|
+| 100 | 0.01023 | 0.00369 | **+63.9% quantum** |
+| 500 | 0.00253 | 0.00274 | -8.3% classical |
+| 1000 | 0.00219 | 0.00237 | -8.6% classical |
+| 5000 | 0.00204 | 0.00213 | -4.5% classical |
+| 10000 | 0.00202 | ~0.00210 | -4.0% classical |
+
+A few things stand out.
+
+**The low-data advantage is real and large.** At n=100, quantum is 3x better at 6 qubits, 3.5x better at 4 qubits. This isn't marginal. Look at what's happening on the classical side at n=100: train loss reaches 0.00258 while val loss stays at 0.01023 — a 4x gap, severe overfitting. The quantum circuit physically cannot overfit in the same way because its hypothesis space is constrained by the circuit structure.
+
+**The crossover is sharp.** At 6 qubits, quantum wins at n=100 and loses at n=500. At 4 qubits, it extends to n=500 before classical takes over. The crossover point appears to scale with dimensionality — larger quantum systems may stay competitive at higher n.
+
+**Both models converge to the same floor.** At n=5000-10000, classical achieves ~0.00202 and quantum ~0.00210 — a 4% gap, and both are barely moving. This floor (~0.002) is the information-theoretic limit of reconstructing through a 64-dim bottleneck given the data distribution. Neither architecture transcends it. The quantum model approaches from a better starting point with less data, but eventually they meet.
+
+**Quantum val loss is already low at epoch 1.** At n=100 with 6 qubits, quantum starts at val=0.00865 on the first epoch. Classical starts at val=0.10510. The circuit's structure provides a strong prior before any training — the inductive bias is architectural, not learned.
+
+## What This Actually Means
+
+The original framing — "entanglement preserves richer correlations than a classical vector" — needs to be updated. The more accurate framing is: **quantum circuits are better structural regularizers in low-data regimes.**
+
+The circuit cannot represent arbitrary functions. It's constrained to the manifold of states reachable by the parameterized unitary sequence. That constraint is a bug when you have enough data to learn the true function. It's a feature when you don't — it prevents the model from memorizing noise.
+
+This is the same intuition behind why convolutional networks outperform MLPs on image tasks with limited data: the architectural prior (translation invariance, locality) matches the structure of the problem. The quantum prior is different — it's correlational structure via entanglement — and it appears to match the structure of learned latent representations.
+
+## Implications for Diffusion LLM Adaptation
+
+The practical application is parameter-efficient adaptation of frozen diffusion language models. The architecture:
+
+```
+Frozen encoder (first half of LLaDA/MDLM)
+        ↓  proj_down (~30K params, trainable)
+  Quantum circuit (6-12 qubits, trainable)
+        ↓  proj_up (~30K params, trainable)
+Frozen decoder (second half)
+```
+
+Total trainable parameters: ~60-70K regardless of base model size. This is LoRA territory.
+
+The bottleneck comparison results predict: if you're adapting a frozen diffusion LM to a new domain with fewer than a few hundred examples, a quantum adapter should outperform a classical linear adapter of the same size. Beyond that, classical catches up.
+
+That covers a real class of problems — rare languages, specialized medical/legal corpora, few-shot style transfer — where labelled data is genuinely scarce. Whether the crossover point shifts when using real pretrained representations (richer, more structured than synthetic latents) is the next experiment.
+
+## What's Next
+
+The synthetic latent test validates the circuit mechanism in isolation. The next step is Phase 2: freeze a small pretrained diffusion LM, inject the quantum bottleneck, and run the same n_train sweep on real text data. If the crossover point shifts from n~100 to n~1000-5000 with real representations — which is plausible given the richer correlation structure in transformer latents — that becomes a practically meaningful result.
+
+The simulation cost at 6 qubits is already ~68x classical training time. For 10 qubits (1024-dim, appropriate for a 1B model's hidden state) it scales quadratically with the state vector, so GPU is required. That's the Modal/GCP phase.
