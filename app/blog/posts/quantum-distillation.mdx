@@ -1,0 +1,108 @@
+---
+title: 'Quantum-Bootstrapped Fine-Tuning: Distilling Quantum Representations into Classical Models'
+publishedAt: '2026-04-19'
+summary: 'A quantum circuit trained on scarce data produces better representations than a classical layer can. What if you could transfer those representations into a classical model and deploy it at classical speed?'
+tag: 'research'
+---
+
+**The quantum bottleneck experiments showed something clear: at n=100, quantum is 3× better than classical. At n=500, classical wins. What if you could have both?**
+
+## The Problem with Each Approach
+
+Classical linear layers are fast and scalable, but they overfit catastrophically on small datasets. At 100 training examples, the classical bottleneck reaches train loss of 0.00258 while val loss stays at 0.01023 — a 4× gap. It memorized the noise.
+
+Quantum circuits don't have this problem. The circuit structure physically constrains the hypothesis space to the manifold of states reachable by the parameterized unitary sequence. It can't memorize noise because its representational freedom is bounded by the circuit geometry. At 100 examples, quantum val loss is 0.00369 — 3× better than classical, with a train/val gap of only 1.6×.
+
+But quantum simulation is ~68× slower than classical training, and that's at 6 qubits. At 10 qubits (needed for a 1B model's hidden dimension), it scales exponentially worse. You can't ship a quantum circuit as a production adapter.
+
+So the question becomes: **can you use quantum where it's strong — low-data training — and then escape to classical for deployment?**
+
+## Quantum-Assisted Distillation
+
+The idea is a three-phase workflow:
+
+```
+Phase 1 — Train quantum on scarce data
+  [small dataset, 100–500 examples]
+  Quantum circuit trains well; classical would overfit
+
+Phase 2 — Distill quantum into classical
+  Use quantum outputs as soft targets
+  Classical learns to mimic the quantum mapping
+
+Phase 3 — Deploy classical
+  Classical speed, quantum-quality representations
+```
+
+This isn't a new idea in spirit — knowledge distillation has existed since Hinton et al. (2015). What's new is the *reason* for the teacher/student split: you're not distilling a large model into a small one. You're distilling a quantum model into a classical one of the *same size*, specifically because the quantum model has a better inductive bias at the data regime you're working in.
+
+## Two Mechanisms for Transfer
+
+### 1. Unitary Extraction
+
+The quantum circuit, once trained, is just computing a sequence of matrix multiplications on a state vector. The full learned transformation is:
+
+$$U_\theta = \prod_{\ell=1}^{L} \text{CNOT}_\ell \cdot R_Y(\theta_\ell) \cdot R_Z(\theta_\ell)$$
+
+For 6 qubits this is a $64 \times 64$ complex unitary matrix. You can compute it explicitly by multiplying out all the gate matrices with the trained $\theta$ values. The real part of $U_\theta$ is a valid initialization for a classical $64 \times 64$ linear layer.
+
+This is the most direct transfer: train quantum → compute $U_\theta$ → initialize classical weights → optionally fine-tune.
+
+The limitation is that quantum output is probabilities ($|\psi|^2$), not amplitudes — measurement discards phase. So what you're actually transferring is the squared magnitude of the unitary, not the full complex structure. Whether the phase information was load-bearing is an open question.
+
+### 2. Soft Distillation
+
+The more standard approach and easier to implement:
+
+1. Train quantum bottleneck on your 100 scarce examples
+2. Run the trained quantum model on all available data (training set + any unlabelled data)
+3. Collect the output representations — these are the quantum model's "beliefs" about good latent structure
+4. Train a classical layer to minimize MSE against those outputs
+5. Deploy the classical layer
+
+$$\mathcal{L}_{\text{distill}} = \mathbb{E}_x \left[ \| f_{\text{classical}}(x) - f_{\text{quantum}}(x) \|^2 \right]$$
+
+The classical model inherits the quantum model's generalization without needing to simulate a quantum circuit at inference. The quantum model's outputs become the ground truth for what a good representation looks like.
+
+## Why This Could Work
+
+The quantum circuit's advantage comes from its structural prior — it constrains the representation to lie on the manifold of states reachable by the circuit. That prior is baked into the quantum *outputs*, not just the weights. When a classical model learns to reproduce those outputs, it's learning to reproduce the manifold, not the circuit.
+
+Think of it like this: the quantum circuit carves out a specific region of representation space that happens to generalize well from few examples. The classical model, given enough distillation data (even just the 100 training examples run through the quantum model), can learn to map inputs into that same region.
+
+## The Practical Use Case
+
+This is aimed directly at the fine-tuning problem for large language models:
+
+1. You want to adapt a frozen diffusion LM to a new domain
+2. You only have 100–500 labelled examples
+3. Classical LoRA or adapter fine-tuning overfits
+4. Instead: train a quantum bottleneck on those examples, distill into a classical adapter, deploy
+
+The quantum training takes hours on CPU. The distillation takes minutes. The deployed model runs at classical speed with no quantum infrastructure.
+
+For organizations that want domain-specific language models but don't have large annotation budgets — medical notes in a specific hospital's style, legal documents in a particular jurisdiction, technical documentation for a niche product — this could be a practical workflow.
+
+## What Needs to Be Validated
+
+This is still a hypothesis. The key question is whether the distilled classical model actually retains the generalization benefit, or whether it just overfits to the quantum model's outputs on the training set (same problem as before, one step removed).
+
+The experiment to run:
+
+| Condition | Training | Deployment |
+|-----------|----------|------------|
+| Classical baseline | Classical, n=100 | Classical |
+| Quantum baseline | Quantum, n=100 | Quantum |
+| Distilled | Quantum, n=100 → distill | Classical |
+
+If distilled val loss matches quantum val loss at n=100 on held-out data, the transfer works. If it collapses toward classical baseline, the quantum prior didn't survive distillation.
+
+The unitary extraction path is the cleaner test — it bypasses the distillation training loop entirely and just asks: does initializing a classical layer with $\text{Re}(U_\theta)$ give it the quantum model's generalization?
+
+## Relationship to the Bottleneck Experiments
+
+The bottleneck comparison results give reason for cautious optimism. At n=100, quantum val loss is 0.00369 — well separated from classical at 0.01023. There's real signal in the quantum representation that a distillation procedure has to work with. If the gap were marginal, distillation wouldn't be worth the complexity.
+
+The crossover at n~200–500 (where classical catches up) also matters: distillation only makes sense when you're below the crossover. Above it, just use classical directly — it's faster and better.
+
+This is the next experiment after `run_sample_efficiency`. The architecture is small enough that the unitary extraction approach can be implemented in a few lines — compute $U_\theta$ explicitly, initialize a classical layer, measure val loss on the same held-out set.
