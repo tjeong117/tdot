@@ -10,12 +10,13 @@ export default function Page() {
           provides its own links since the nav underneath is unreadable on black. */}
       <div className="absolute top-0 left-0 z-20 h-[100svh] w-full overflow-hidden bg-black">
         <BlackHole />
-        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-white">
+        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.9),0_0_18px_rgba(0,0,0,0.7)]">
           <h1 className="text-4xl font-semibold tracking-tighter md:text-5xl">
             Tom Jeong
           </h1>
           <p className="mt-3 text-neutral-300">
-            co-founder &amp; CTO of Datafruit (YC S25)
+            founding MTS at Refresh · prev co-founder &amp; CTO of Datafruit (YC
+            S25)
           </p>
           <nav className="pointer-events-auto mt-6 flex flex-row space-x-6 text-neutral-200">
             <Link href="/blog" className="underline-offset-4 hover:underline">
@@ -45,7 +46,7 @@ export default function Page() {
       {/* Pushed below the hero: ~10rem of nav/margins sits above this in the flow. */}
       <section className="mt-[calc(100svh-6rem)]">
         <p className="mb-4">
-          {`Hi, I'm Tom, co-founder and CTO of `}
+          {`Hi, I'm Tom, currently a founding member of technical staff at Refresh. Previously I was co-founder and CTO of `}
           <a
             href="https://datafruit.ai"
             target="_blank"
@@ -63,7 +64,7 @@ export default function Page() {
           >
             YC S25
           </a>
-          {`) where we are building AI systems for enterprise software implementation teams.`}
+          {`), where we built AI systems for enterprise software implementation teams.`}
         </p>
         <p className="mb-4">
           {`I'm a recent grad from Georgia Institute of Technology where I studied Computer Science and Mathematics.`}

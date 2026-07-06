@@ -13,44 +13,117 @@ export function BlackHole() {
 
     const scene = new THREE.Scene()
     const camera = new THREE.PerspectiveCamera(
-      75,
+      70,
       mount.clientWidth / mount.clientHeight,
       0.1,
-      1000
+      2000
     )
     const renderer = new THREE.WebGLRenderer({ antialias: true })
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     renderer.setSize(mount.clientWidth, mount.clientHeight)
     mount.appendChild(renderer.domElement)
 
-    camera.position.set(0, 3, 8)
+    camera.position.set(0, 7, 20)
     const controls = new OrbitControls(camera, renderer.domElement)
     controls.enableDamping = true
     controls.dampingFactor = 0.05
     controls.enableZoom = false
     controls.enablePan = false
     controls.autoRotate = true
-    controls.autoRotateSpeed = 0.3
+    controls.autoRotateSpeed = 0.4
     // OrbitControls sets touch-action: none; allow vertical swipes to scroll the page
     renderer.domElement.style.touchAction = 'pan-y'
 
+    const disposables: { dispose: () => void }[] = []
+
+    // Soft radial sprite shared by all particle systems
+    const makeSpriteTexture = (stops: [number, string][]) => {
+      const size = 128
+      const canvas = document.createElement('canvas')
+      canvas.width = size
+      canvas.height = size
+      const ctx = canvas.getContext('2d')!
+      const g = ctx.createRadialGradient(
+        size / 2, size / 2, 0,
+        size / 2, size / 2, size / 2
+      )
+      for (const [offset, color] of stops) g.addColorStop(offset, color)
+      ctx.fillStyle = g
+      ctx.fillRect(0, 0, size, size)
+      const texture = new THREE.CanvasTexture(canvas)
+      disposables.push(texture)
+      return texture
+    }
+
+    const particleTexture = makeSpriteTexture([
+      [0, 'rgba(255,255,255,1)'],
+      [0.4, 'rgba(255,255,255,0.6)'],
+      [1, 'rgba(255,255,255,0)'],
+    ])
+
     // Event horizon
     const blackHoleGeometry = new THREE.SphereGeometry(1, 128, 128)
-    const blackHoleMaterial = new THREE.MeshBasicMaterial({
-      color: 0x000000,
+    const blackHoleMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 })
+    disposables.push(blackHoleGeometry, blackHoleMaterial)
+    scene.add(new THREE.Mesh(blackHoleGeometry, blackHoleMaterial))
+
+    // Photon-ring glow hugging the horizon, drawn as a rim around the black sphere
+    const glowTexture = makeSpriteTexture([
+      [0, 'rgba(255,190,120,0.9)'],
+      [0.25, 'rgba(255,160,80,0.35)'],
+      [0.6, 'rgba(120,60,40,0.08)'],
+      [1, 'rgba(0,0,0,0)'],
+    ])
+    const glowMaterial = new THREE.SpriteMaterial({
+      map: glowTexture,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
       transparent: true,
-      opacity: 1,
     })
-    const blackHole = new THREE.Mesh(blackHoleGeometry, blackHoleMaterial)
-    scene.add(blackHole)
+    disposables.push(glowMaterial)
+    const glow = new THREE.Sprite(glowMaterial)
+    glow.scale.set(7, 7, 1)
+    scene.add(glow)
+
+    // Warm halo lying in the disk plane
+    const haloTexture = makeSpriteTexture([
+      [0, 'rgba(0,0,0,0)'],
+      [0.14, 'rgba(0,0,0,0)'],
+      [0.2, 'rgba(255,200,140,0.55)'],
+      [0.32, 'rgba(255,140,60,0.2)'],
+      [1, 'rgba(0,0,0,0)'],
+    ])
+    const haloGeometry = new THREE.PlaneGeometry(16, 16)
+    const haloMaterial = new THREE.MeshBasicMaterial({
+      map: haloTexture,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      transparent: true,
+      side: THREE.DoubleSide,
+    })
+    disposables.push(haloGeometry, haloMaterial)
+    const halo = new THREE.Mesh(haloGeometry, haloMaterial)
+    halo.rotation.x = -Math.PI / 2
+    scene.add(halo)
 
     // --- Physics Constants ---
     const GM = 50.0 // Gravitational constant times mass (arbitrary units)
     const epsilon = 0.0001 // Softening factor to avoid singularities
-    const spin = new THREE.Vector3(0, 1, 0) // Black hole spin axis
-    const frameDraggingStrength = 0.05
+    const frameDraggingStrength = 0.05 // Spin axis is +Y
 
     const isSmallScreen = window.innerWidth < 768
+
+    // Accretion temperature ramp: white-hot at the horizon out to dim violet
+    const cHot = new THREE.Color(0xffffff)
+    const cGold = new THREE.Color(0xffc46b)
+    const cEmber = new THREE.Color(0xff7a2a)
+    const cFar = new THREE.Color(0x53306b)
+    const tempColor = new THREE.Color()
+    const colorForRadius = (r: number) => {
+      if (r < 4) return tempColor.copy(cHot).lerp(cGold, (r - 1.2) / 2.8)
+      if (r < 10) return tempColor.copy(cGold).lerp(cEmber, (r - 4) / 6)
+      return tempColor.copy(cEmber).lerp(cFar, Math.min((r - 10) / 20, 1))
+    }
 
     // --- Particle System Creation ---
     // Particles start in a spherical shell with roughly circular orbital velocity.
@@ -64,6 +137,7 @@ export function BlackHole() {
       const geometry = new THREE.BufferGeometry()
       const positions = new Float32Array(count * 3)
       const velocities = new Float32Array(count * 3)
+      const colors = new Float32Array(count * 3)
 
       for (let i = 0; i < count; i++) {
         const i3 = i * 3
@@ -91,85 +165,118 @@ export function BlackHole() {
         velocities[i3] = tangent.x
         velocities[i3 + 1] = tangent.y
         velocities[i3 + 2] = tangent.z
+
+        const c = colorForRadius(radius)
+        colors[i3] = c.r
+        colors[i3 + 1] = c.g
+        colors[i3 + 2] = c.b
       }
 
-      // Round sprite texture for the particles
-      const canvas = document.createElement('canvas')
-      const context = canvas.getContext('2d')!
-      const textureSize = 64
-      canvas.width = textureSize
-      canvas.height = textureSize
-      context.beginPath()
-      context.arc(textureSize / 2, textureSize / 2, textureSize / 2, 0, 2 * Math.PI)
-      context.fillStyle = 'white'
-      context.fill()
-      const texture = new THREE.CanvasTexture(canvas)
-
       const material = new THREE.PointsMaterial({
-        color: 0xffffff,
         size: size,
+        map: particleTexture,
+        vertexColors: true,
         transparent: true,
-        opacity: 0.8,
+        opacity: 0.75,
         sizeAttenuation: true,
-        alphaMap: texture,
-        alphaTest: 0.5,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
       })
 
       geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+      geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
+      disposables.push(geometry, material)
 
       const particles = new THREE.Points(geometry, material)
       scene.add(particles)
 
-      return { particles, positions, velocities, dtFactor, geometry, material, texture }
+      return { particles, positions, velocities, dtFactor }
     }
 
     const innerParticles = createParticleSystem(
-      isSmallScreen ? 15000 : 50000,
+      isSmallScreen ? 25000 : 90000,
       1.2, // just outside the event horizon (r = 1)
       30,
-      0.02,
+      0.05,
       0.02
     )
     const outerParticles = createParticleSystem(
-      isSmallScreen ? 30000 : 100000,
+      isSmallScreen ? 40000 : 160000,
       3,
-      8,
-      0.015,
+      9,
+      0.04,
       0.01
     )
 
+    // --- Background starfield (static, far away) ---
+    const starCount = isSmallScreen ? 1500 : 5000
+    const starPositions = new Float32Array(starCount * 3)
+    const starColors = new Float32Array(starCount * 3)
+    for (let i = 0; i < starCount; i++) {
+      const i3 = i * 3
+      const radius = 150 + Math.random() * 250
+      const theta = Math.random() * 2 * Math.PI
+      const phi = Math.acos(2 * Math.random() - 1)
+      starPositions[i3] = radius * Math.sin(phi) * Math.cos(theta)
+      starPositions[i3 + 1] = radius * Math.sin(phi) * Math.sin(theta)
+      starPositions[i3 + 2] = radius * Math.cos(phi)
+      const brightness = 0.4 + Math.random() * 0.6
+      const blueTint = Math.random() * 0.15
+      starColors[i3] = brightness - blueTint
+      starColors[i3 + 1] = brightness - blueTint * 0.5
+      starColors[i3 + 2] = brightness
+    }
+    const starGeometry = new THREE.BufferGeometry()
+    starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3))
+    starGeometry.setAttribute('color', new THREE.BufferAttribute(starColors, 3))
+    const starMaterial = new THREE.PointsMaterial({
+      size: 1.1,
+      map: particleTexture,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.9,
+      sizeAttenuation: true,
+      depthWrite: false,
+    })
+    disposables.push(starGeometry, starMaterial)
+    scene.add(new THREE.Points(starGeometry, starMaterial))
+
     // --- Animation Loop ---
-    // Velocity update = gravitational pull + frame-dragging term, then integrate position.
+    // Scalar math (no Vector3 allocations or calls) keeps 250k particles at 60fps.
+    // Velocity update = gravitational pull + frame-dragging term, then integrate.
     let frameId: number
-    const tempPos = new THREE.Vector3()
-    const tempAccel = new THREE.Vector3()
-    const tempAccel2 = new THREE.Vector3()
-    const tempVel = new THREE.Vector3()
 
     const updateParticles = (system: ReturnType<typeof createParticleSystem>) => {
       const dt = system.dtFactor
       const { positions, velocities } = system
       for (let i = 0; i < positions.length; i += 3) {
-        tempPos.set(positions[i], positions[i + 1], positions[i + 2])
-        const r = tempPos.length()
+        const px = positions[i]
+        const py = positions[i + 1]
+        const pz = positions[i + 2]
+        const r2 = px * px + py * py + pz * pz
+        const invR3 = 1 / (r2 * Math.sqrt(r2) + epsilon)
 
         // a = -GM * r_vec / (r^3 + epsilon)
-        tempAccel.copy(tempPos).multiplyScalar(-GM / (r * r * r + epsilon))
+        const gScale = -GM * invR3
+        const vx = velocities[i]
+        const vy = velocities[i + 1]
+        const vz = velocities[i + 2]
+        // a_drag = v x spin / (r^3 + epsilon), spin = (0,1,0) => (-vz, 0, vx)
+        const dragScale = frameDraggingStrength * invR3
+        const ax = px * gScale - vz * dragScale
+        const ay = py * gScale
+        const az = pz * gScale + vx * dragScale
 
-        tempVel.set(velocities[i], velocities[i + 1], velocities[i + 2])
-        // a_drag ~ v x spin / (r^3 + epsilon)
-        tempAccel2
-          .copy(tempVel)
-          .cross(spin)
-          .multiplyScalar(frameDraggingStrength / (r * r * r + epsilon))
+        const nvx = vx + ax * dt
+        const nvy = vy + ay * dt
+        const nvz = vz + az * dt
+        velocities[i] = nvx
+        velocities[i + 1] = nvy
+        velocities[i + 2] = nvz
 
-        velocities[i] += (tempAccel.x + tempAccel2.x) * dt
-        velocities[i + 1] += (tempAccel.y + tempAccel2.y) * dt
-        velocities[i + 2] += (tempAccel.z + tempAccel2.z) * dt
-
-        positions[i] += velocities[i] * dt
-        positions[i + 1] += velocities[i + 1] * dt
-        positions[i + 2] += velocities[i + 2] * dt
+        positions[i] = px + nvx * dt
+        positions[i + 1] = py + nvy * dt
+        positions[i + 2] = pz + nvz * dt
       }
       system.particles.geometry.attributes.position.needsUpdate = true
     }
@@ -183,6 +290,11 @@ export function BlackHole() {
     }
     animate()
 
+    // Fade the scene in once the first frames are up
+    requestAnimationFrame(() => {
+      mount.style.opacity = '1'
+    })
+
     const handleResize = () => {
       camera.aspect = mount.clientWidth / mount.clientHeight
       camera.updateProjectionMatrix()
@@ -194,13 +306,7 @@ export function BlackHole() {
       window.removeEventListener('resize', handleResize)
       cancelAnimationFrame(frameId)
       controls.dispose()
-      for (const system of [innerParticles, outerParticles]) {
-        system.geometry.dispose()
-        system.material.dispose()
-        system.texture.dispose()
-      }
-      blackHoleGeometry.dispose()
-      blackHoleMaterial.dispose()
+      for (const d of disposables) d.dispose()
       renderer.dispose()
       if (mount.contains(renderer.domElement)) {
         mount.removeChild(renderer.domElement)
@@ -208,5 +314,10 @@ export function BlackHole() {
     }
   }, [])
 
-  return <div ref={mountRef} className="absolute inset-0 bg-black" />
+  return (
+    <div
+      ref={mountRef}
+      className="absolute inset-0 bg-black opacity-0 transition-opacity duration-1000"
+    />
+  )
 }

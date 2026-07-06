@@ -15,10 +15,10 @@ export const metadata: Metadata = {
     default: 'Tom Jeong',
     template: '%s | Tom Jeong',
   },
-  description: 'Co-founder and CTO of Datafruit (YC S25).',
+  description: 'Founding MTS at Refresh. Prev co-founder and CTO of Datafruit (YC S25).',
   openGraph: {
     title: 'Tom Jeong',
-    description: 'Co-founder and CTO of Datafruit (YC S25).',
+    description: 'Founding MTS at Refresh. Prev co-founder and CTO of Datafruit (YC S25).',
     url: baseUrl,
     siteName: 'Tom Jeong',
     locale: 'en_US',
