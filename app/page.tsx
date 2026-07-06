@@ -28,9 +28,6 @@ export default function Page() {
             >
               research
             </Link>
-            <Link href="/watch" className="underline-offset-4 hover:underline">
-              watch
-            </Link>
             <a
               href="https://www.linkedin.com/in/tomwsjeong"
               target="_blank"
