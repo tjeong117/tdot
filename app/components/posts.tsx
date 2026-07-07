@@ -22,13 +22,13 @@ export function BlogPosts() {
             href={`/blog/${post.slug}`}
           >
             <div className="w-full flex flex-col md:flex-row md:items-baseline space-x-0 md:space-x-2">
-              <p className="text-neutral-600 dark:text-neutral-400 w-[150px] shrink-0 whitespace-nowrap tabular-nums">
+              <p className="font-readout text-neutral-600 dark:text-neutral-400 w-[150px] shrink-0 whitespace-nowrap tabular-nums">
                 {formatDate(post.metadata.publishedAt, false)}
               </p>
               <p className="text-neutral-900 dark:text-neutral-100 tracking-tight">
                 {post.metadata.title}
                 {post.metadata.tag === 'research' && (
-                  <span className="ml-2 inline-flex items-center align-middle rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-600/20 dark:bg-blue-400/10 dark:text-blue-400 dark:ring-blue-400/30">
+                  <span className="eh-pill ml-2 inline-flex items-center align-middle rounded-full px-2 py-0.5 text-xs font-medium">
                     research
                   </span>
                 )}

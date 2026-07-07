@@ -19,20 +19,17 @@ export default function Page() {
             S25)
           </p>
           <nav className="pointer-events-auto mt-6 flex flex-row space-x-6 text-neutral-200">
-            <Link href="/blog" className="underline-offset-4 hover:underline">
+            <Link href="/blog" className="eh-hover-bright">
               blog
             </Link>
-            <Link
-              href="/research"
-              className="underline-offset-4 hover:underline"
-            >
+            <Link href="/research" className="eh-hover-bright">
               research
             </Link>
             <a
               href="https://www.linkedin.com/in/tomwsjeong"
               target="_blank"
               rel="noopener noreferrer"
-              className="underline-offset-4 hover:underline"
+              className="eh-hover-bright"
             >
               linkedin
             </a>
@@ -91,13 +88,15 @@ export default function Page() {
           {`.`}
         </p>
         <div className="my-8">
-          <h2 className="font-semibold text-xl mb-4 tracking-tighter">
+          <h2 className="ring-rule font-semibold text-xl mb-4 tracking-tighter">
             Research
           </h2>
           <ResearchPapers />
         </div>
         <div className="my-8">
-          <h2 className="font-semibold text-xl mb-4 tracking-tighter">Blog</h2>
+          <h2 className="ring-rule font-semibold text-xl mb-4 tracking-tighter">
+            Blog
+          </h2>
           <BlogPosts />
         </div>
       </section>

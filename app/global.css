@@ -1,11 +1,17 @@
 @import 'tailwindcss';
 
+/* Event Horizon theme — palette lifted from the black hole hero's accretion disk */
 ::selection {
-  background-color: #47a3f3;
-  color: #fefefe;
+  background-color: #c9a24b;
+  color: #0c0a06;
 }
 
 :root {
+  --eh-gold: #8a6117;
+  --eh-gold-bright: #b8862c;
+  --eh-pill-bg: #f8f1df;
+  --eh-pill-text: #8a6117;
+  --eh-pill-ring: rgba(201, 162, 75, 0.45);
   --sh-class: #2d5e9d;
   --sh-identifier: #354150;
   --sh-sign: #8996a3;
@@ -19,6 +25,11 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
+    --eh-gold: #e3b264;
+    --eh-gold-bright: #ffc46b;
+    --eh-pill-bg: rgba(255, 196, 107, 0.08);
+    --eh-pill-text: #e9c07a;
+    --eh-pill-ring: rgba(255, 196, 107, 0.28);
     --sh-class: #4c97f8;
     --sh-identifier: white;
     --sh-keyword: #f47067;
@@ -27,6 +38,76 @@
   html {
     color-scheme: dark;
   }
+  /* Faint starfield + warm horizon glow behind all content, echoing the hero */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image: radial-gradient(
+        900px 420px at 50% -60px,
+        rgba(255, 196, 107, 0.05),
+        transparent 70%
+      ),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cg fill='%23ffffff'%3E%3Ccircle cx='17' cy='36' r='0.8' opacity='.28'/%3E%3Ccircle cx='63' cy='11' r='0.6' opacity='.18'/%3E%3Ccircle cx='104' cy='58' r='0.9' opacity='.24'/%3E%3Ccircle cx='151' cy='24' r='0.5' opacity='.16'/%3E%3Ccircle cx='196' cy='73' r='0.7' opacity='.22'/%3E%3Ccircle cx='38' cy='104' r='0.6' opacity='.18'/%3E%3Ccircle cx='87' cy='139' r='0.8' opacity='.26'/%3E%3Ccircle cx='139' cy='112' r='0.5' opacity='.15'/%3E%3Ccircle cx='183' cy='151' r='0.9' opacity='.22'/%3E%3Ccircle cx='226' cy='118' r='0.5' opacity='.14'/%3E%3Ccircle cx='22' cy='176' r='0.7' opacity='.2'/%3E%3Ccircle cx='68' cy='212' r='0.5' opacity='.15'/%3E%3Ccircle cx='121' cy='188' r='0.8' opacity='.24'/%3E%3Ccircle cx='171' cy='226' r='0.6' opacity='.17'/%3E%3Ccircle cx='213' cy='196' r='0.5' opacity='.14'/%3E%3C/g%3E%3Cg fill='%23ffc46b'%3E%3Ccircle cx='132' cy='16' r='0.7' opacity='.2'/%3E%3Ccircle cx='51' cy='158' r='0.6' opacity='.18'/%3E%3C/g%3E%3C/svg%3E");
+    background-repeat: no-repeat, repeat;
+  }
+}
+
+/* Telemetry type for dates and metadata */
+.font-readout {
+  font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo,
+    monospace;
+  font-size: 0.8125rem;
+  letter-spacing: -0.01em;
+}
+
+/* Photon-ring rule under section headings: a hairline that fades out */
+.ring-rule {
+  position: relative;
+  padding-bottom: 0.5rem;
+}
+.ring-rule::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 1px;
+  width: 6rem;
+  background: linear-gradient(90deg, var(--eh-gold), transparent);
+  opacity: 0.6;
+}
+
+/* Accretion-gold tag pill */
+.eh-pill {
+  background: var(--eh-pill-bg);
+  color: var(--eh-pill-text);
+  box-shadow: inset 0 0 0 1px var(--eh-pill-ring);
+}
+
+/* Gold hover for nav/footer links; -bright variant for the always-dark hero */
+.eh-hover {
+  transition: color 0.15s;
+}
+.eh-hover:hover {
+  color: var(--eh-gold);
+}
+.eh-hover-bright {
+  transition: color 0.15s;
+}
+.eh-hover-bright:hover {
+  color: #ffc46b;
+}
+
+/* Content links underline in gold */
+a.underline {
+  text-decoration-color: color-mix(in srgb, var(--eh-gold) 50%, transparent);
+  text-underline-offset: 3px;
+  transition: text-decoration-color 0.15s;
+}
+a.underline:hover {
+  text-decoration-color: var(--eh-gold);
 }
 
 html {
@@ -48,7 +129,12 @@ html {
 }
 
 .prose a {
-  @apply underline transition-all decoration-neutral-400 dark:decoration-neutral-600 underline-offset-2 decoration-[0.1em];
+  @apply underline transition-all underline-offset-2 decoration-[0.1em];
+  text-decoration-color: color-mix(in srgb, var(--eh-gold) 45%, transparent);
+}
+
+.prose a:hover {
+  text-decoration-color: var(--eh-gold);
 }
 
 .prose .anchor:after {
