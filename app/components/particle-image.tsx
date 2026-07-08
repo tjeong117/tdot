@@ -26,8 +26,8 @@ export function ParticleImage({
   src,
   worldWidth = 160,
   sampleWidth = 800,
-  exposure = 0.9,
-  saturation = 1.4,
+  exposure = 0.55,
+  saturation = 1.1,
   lumThreshold = 0.045,
   depth = 'luminance',
 }: ParticleImageProps) {
@@ -49,6 +49,9 @@ export function ParticleImage({
     const renderer = new THREE.WebGLRenderer({ antialias: true })
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     renderer.setSize(mount.clientWidth, mount.clientHeight)
+    // pass colors through untouched: we feed sRGB values from the image, so
+    // the default linear->sRGB output transform would wash them out
+    renderer.outputColorSpace = THREE.LinearSRGBColorSpace
     mount.appendChild(renderer.domElement)
 
     const group = new THREE.Group()
@@ -220,7 +223,9 @@ export function ParticleImage({
       )
       geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
       const material = new THREE.PointsMaterial({
-        size: (W / sw) * 2.1,
+        // three sizes points in device px from CSS height: scale by the
+        // pixel ratio or retina screens render every sprite at half size
+        size: (W / sw) * 2.1 * renderer.getPixelRatio(),
         map: spriteTexture,
         vertexColors: true,
         transparent: true,

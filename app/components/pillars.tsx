@@ -13,8 +13,6 @@ export function Pillars() {
         landscape: '/misc/pillars-wide.jpg',
         portrait: '/misc/pillars.jpg',
       }}
-      exposure={{ landscape: 0.9, portrait: 0.62 }}
-      saturation={1.45}
     />
   )
 }

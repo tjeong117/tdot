@@ -46,6 +46,8 @@ export function Gargantua() {
     const renderer = new THREE.WebGLRenderer({ antialias: true })
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     renderer.setSize(mount.clientWidth, mount.clientHeight)
+    // pass sRGB colors through untouched (no double gamma)
+    renderer.outputColorSpace = THREE.LinearSRGBColorSpace
     mount.appendChild(renderer.domElement)
     renderer.domElement.style.touchAction = 'none'
 
@@ -132,8 +134,8 @@ export function Gargantua() {
       // --- radial color/brightness profile measured from the band ---
       const NB = 96
       const acc = Array.from({ length: NB }, () => [0, 0, 0, 0, 0]) // r,g,b,lum,n
-      const exposure = 0.6
-      const saturation = 1.2
+      const exposure = 0.5
+      const saturation = 1.1
       const haloPos: number[] = []
       const haloCol: number[] = []
       for (let v = 0; v < sh; v++) {
@@ -188,7 +190,7 @@ export function Gargantua() {
         new THREE.Float32BufferAttribute(haloCol, 3)
       )
       const haloMaterial = new THREE.PointsMaterial({
-        size: (W / sw) * 2.3,
+        size: (W / sw) * 2.3 * renderer.getPixelRatio(),
         map: spriteTexture,
         vertexColors: true,
         transparent: true,
@@ -233,7 +235,7 @@ export function Gargantua() {
         height[i] = gauss() * (0.4 + 0.02 * r)
         omega[i] = 0.42 * Math.pow(r / R_IN, -1.5)
         const [pr, pg, pb, plum] = profile[bIdx]
-        const scale = 0.42
+        const scale = 0.34
         baseColors[i * 3] = Math.max(0, plum + (pr - plum) * 1.25) * scale
         baseColors[i * 3 + 1] = Math.max(0, plum + (pg - plum) * 1.25) * scale
         baseColors[i * 3 + 2] = Math.max(0, plum + (pb - plum) * 1.25) * scale
@@ -245,7 +247,7 @@ export function Gargantua() {
       geometry.setAttribute('position', posAttr)
       geometry.setAttribute('color', colAttr)
       const material = new THREE.PointsMaterial({
-        size: 0.85,
+        size: 0.85 * renderer.getPixelRatio(),
         map: spriteTexture,
         vertexColors: true,
         transparent: true,

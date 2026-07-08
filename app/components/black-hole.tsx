@@ -193,18 +193,19 @@ export function BlackHole() {
       return { particles, positions, velocities, dtFactor }
     }
 
+    const dpr = renderer.getPixelRatio()
     const innerParticles = createParticleSystem(
       isSmallScreen ? 25000 : 90000,
       1.2, // just outside the event horizon (r = 1)
       30,
-      0.05,
+      0.05 * dpr,
       0.02
     )
     const outerParticles = createParticleSystem(
       isSmallScreen ? 40000 : 160000,
       3,
       9,
-      0.04,
+      0.04 * dpr,
       0.01
     )
 

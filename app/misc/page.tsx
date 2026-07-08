@@ -67,6 +67,11 @@ export default function Page() {
           {[
             ['carina', 'Cosmic Cliffs — the Carina Nebula in particles'],
             ['southern-ring', 'Southern Ring — a dying star, shell by shell'],
+            ['ring-nebula', 'Ring Nebula — a sunlike star’s last breath'],
+            ['cats-eye', 'Cat’s Eye — eleven shells and an X-ray heart'],
+            ['helix', 'Helix — the eye of god, a trillion miles wide'],
+            ['butterfly', 'Butterfly — 20,000-degree wings'],
+            ['crab', 'Crab Nebula — the wreckage of 1054, still glowing'],
             ['tarantula', 'Tarantula Nebula — the Local Group’s star factory'],
             ['deep-field', 'Deep Field — fall into SMACS 0723, galaxy by galaxy'],
           ].map(([slug, label]) => (

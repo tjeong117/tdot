@@ -18,21 +18,56 @@ export const ARTIFACTS: Record<string, Artifact> = {
     blurb:
       "The edge of NGC 3324 in the Carina Nebula — a wall of gas seven light-years tall, sculpted by ultraviolet radiation from newborn stars above it.",
     credit: 'NASA, ESA, CSA, STScI — JWST NIRCam, 2022',
-    options: { src: '/misc/carina.jpg', exposure: 0.85, saturation: 1.35 },
+    options: { src: '/misc/carina.jpg' },
   },
   'southern-ring': {
     title: 'Southern Ring',
     blurb:
       'NGC 3132 — a dying star flinging off its outer layers in shells of gas and dust, with the white dwarf that made them visible at the center.',
     credit: 'NASA, ESA, CSA, STScI — JWST NIRCam, 2022',
-    options: { src: '/misc/southern-ring.jpg', exposure: 0.85, saturation: 1.3 },
+    options: { src: '/misc/southern-ring.jpg' },
   },
   tarantula: {
     title: 'Tarantula Nebula',
     blurb:
       '30 Doradus — the most violent star-forming region in the Local Group, 161,000 light-years away, with tens of thousands of young stars burning through their cocoon.',
     credit: 'NASA, ESA, CSA, STScI — JWST NIRCam, 2022',
-    options: { src: '/misc/tarantula.jpg', exposure: 0.85, saturation: 1.35 },
+    options: { src: '/misc/tarantula.jpg' },
+  },
+  'ring-nebula': {
+    title: 'Ring Nebula',
+    blurb:
+      "M57 — a sunlike star's final act, 2,500 light-years away: shells of ejected gas around a collapsing core, caught face-on so the barrel of the explosion looks like a ring.",
+    credit: 'ESA/Webb, NASA, CSA, STScI — JWST NIRCam, 2023',
+    options: { src: '/misc/ring-nebula.jpg' },
+  },
+  'cats-eye': {
+    title: "Cat's Eye",
+    blurb:
+      'NGC 6543 — eleven concentric shells thrown off in 1,500-year convulsions, with the dying star still burning hot enough at the center to glow in X-rays.',
+    credit: 'NASA, ESA, CXC, HST — Hubble & Chandra composite',
+    options: { src: '/misc/cats-eye.jpg' },
+  },
+  helix: {
+    title: 'Helix Nebula',
+    blurb:
+      'NGC 7293 — the nearest bright planetary nebula to Earth, a trillion-mile-wide eye of glowing gas whose inner edge is being evaporated by the white dwarf at its pupil.',
+    credit: "NASA, ESA, C.R. O'Dell — Hubble & CTIO, 2004",
+    options: { src: '/misc/helix.jpg' },
+  },
+  butterfly: {
+    title: 'Butterfly Nebula',
+    blurb:
+      'NGC 6302 — wings of gas heated to 20,000 degrees tearing outward at over 600,000 miles an hour, from a star that was once five times the mass of the Sun.',
+    credit: 'NASA, ESA, Hubble SM4 ERO Team — Hubble WFC3, 2009',
+    options: { src: '/misc/butterfly.jpg' },
+  },
+  crab: {
+    title: 'Crab Nebula',
+    blurb:
+      'M1 — the wreckage of a supernova witnessed in 1054, a cage of glowing filaments around a pulsar spinning thirty times a second.',
+    credit: 'NASA, ESA, CSA, STScI, T. Temim — JWST MIRI & NIRCam, 2024',
+    options: { src: '/misc/crab.jpg' },
   },
   'deep-field': {
     title: 'Deep Field',
@@ -41,8 +76,7 @@ export const ARTIFACTS: Record<string, Artifact> = {
     credit: 'NASA, ESA, CSA, STScI — JWST NIRCam, 2022',
     options: {
       src: '/misc/deep-field.jpg',
-      exposure: 1.1,
-      saturation: 1.3,
+      exposure: 0.7,
       lumThreshold: 0.075,
       depth: 'galaxies',
     },

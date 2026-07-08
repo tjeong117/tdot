@@ -116,7 +116,7 @@ export function Sky() {
       g.setAttribute('position', new THREE.Float32BufferAttribute(b.pos, 3))
       g.setAttribute('color', new THREE.Float32BufferAttribute(b.col, 3))
       const m = new THREE.PointsMaterial({
-        size: BUCKETS[i].size,
+        size: BUCKETS[i].size * renderer.getPixelRatio(),
         map: starTexture,
         vertexColors: true,
         transparent: true,
