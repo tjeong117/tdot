@@ -25,6 +25,9 @@ export default function Page() {
             <Link href="/research" className="eh-hover-bright">
               research
             </Link>
+            <Link href="/sky" className="eh-hover-bright">
+              sky
+            </Link>
             <a
               href="https://www.linkedin.com/in/tomwsjeong"
               target="_blank"
@@ -98,6 +101,21 @@ export default function Page() {
             Blog
           </h2>
           <BlogPosts />
+        </div>
+        <div className="my-8">
+          <h2 className="ring-rule font-semibold text-xl mb-4 tracking-tighter">
+            Miscellaneous
+          </h2>
+          <Link className="flex flex-col space-y-1 mb-4" href="/sky">
+            <div className="w-full flex flex-col md:flex-row md:items-baseline space-x-0 md:space-x-2">
+              <p className="font-readout text-neutral-600 dark:text-neutral-400 w-[150px] shrink-0 whitespace-nowrap">
+                interactive
+              </p>
+              <p className="text-neutral-900 dark:text-neutral-100 tracking-tight">
+                Constellation Atlas — the sky, drawn by the gods&apos; hands
+              </p>
+            </div>
+          </Link>
         </div>
       </section>
     </>

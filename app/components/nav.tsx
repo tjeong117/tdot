@@ -10,6 +10,9 @@ const navItems = {
   '/research': {
     name: 'research',
   },
+  '/sky': {
+    name: 'sky',
+  },
 }
 
 export function Navbar() {

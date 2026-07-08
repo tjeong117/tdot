@@ -27,9 +27,15 @@ export function BlogPosts() {
               </p>
               <p className="text-neutral-900 dark:text-neutral-100 tracking-tight">
                 {post.metadata.title}
-                {post.metadata.tag === 'research' && (
-                  <span className="eh-pill ml-2 inline-flex items-center align-middle rounded-full px-2 py-0.5 text-xs font-medium">
-                    research
+                {post.metadata.tag && (
+                  <span
+                    className={`${
+                      post.metadata.tag === 'research'
+                        ? 'eh-pill'
+                        : 'eh-pill-muted'
+                    } ml-2 inline-flex items-center align-middle rounded-full px-2 py-0.5 text-xs font-medium`}
+                  >
+                    {post.metadata.tag}
                   </span>
                 )}
               </p>
