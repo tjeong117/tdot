@@ -20,6 +20,9 @@ export type ParticleImageProps = {
   saturation?: number
   lumThreshold?: number
   depth?: 'luminance' | 'galaxies'
+  /* 'explorer' = fullscreen artifact with zoom/pan/loader;
+     'background' = page backdrop: hover tilt only, page keeps scrolling */
+  variant?: 'explorer' | 'background'
 }
 
 export function ParticleImage({
@@ -30,6 +33,7 @@ export function ParticleImage({
   saturation = 1.1,
   lumThreshold = 0.045,
   depth = 'luminance',
+  variant = 'explorer',
 }: ParticleImageProps) {
   const mountRef = useRef<HTMLDivElement | null>(null)
   const [ready, setReady] = useState(false)
@@ -253,8 +257,11 @@ export function ParticleImage({
     const prefersReducedMotion = window.matchMedia(
       '(prefers-reduced-motion: reduce)'
     ).matches
-    renderer.domElement.style.touchAction = 'none'
-    renderer.domElement.style.cursor = 'grab'
+    const interactive = variant === 'explorer'
+    if (interactive) {
+      renderer.domElement.style.touchAction = 'none'
+      renderer.domElement.style.cursor = 'grab'
+    }
 
     const onPointerMove = (e: PointerEvent) => {
       if (dragging) {
@@ -288,9 +295,11 @@ export function ParticleImage({
       applyView()
     }
     window.addEventListener('pointermove', onPointerMove)
-    renderer.domElement.addEventListener('pointerdown', onPointerDown)
-    renderer.domElement.addEventListener('pointerup', onPointerUp)
-    renderer.domElement.addEventListener('wheel', onWheel, { passive: false })
+    if (interactive) {
+      renderer.domElement.addEventListener('pointerdown', onPointerDown)
+      renderer.domElement.addEventListener('pointerup', onPointerUp)
+      renderer.domElement.addEventListener('wheel', onWheel, { passive: false })
+    }
 
     let last = performance.now()
     let t = 0
@@ -333,9 +342,11 @@ export function ParticleImage({
     <>
       <div
         ref={mountRef}
-        className="fixed inset-0 bg-black opacity-0 transition-opacity duration-[1500ms]"
+        className={`${
+          variant === 'background' ? 'absolute' : 'fixed'
+        } inset-0 bg-black opacity-0 transition-opacity duration-[1500ms]`}
       />
-      <MirrorLoader done={ready} />
+      {variant === 'explorer' && <MirrorLoader done={ready} />}
     </>
   )
 }

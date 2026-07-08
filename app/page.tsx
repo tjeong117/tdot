@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { BlogPosts } from 'app/components/posts'
 import { ResearchPapers } from 'app/components/research'
-import { BlackHole } from 'app/components/black-hole'
+import { ParticleImage } from 'app/components/particle-image'
 
 export default function Page() {
   return (
@@ -9,7 +9,12 @@ export default function Page() {
       {/* Full-viewport hero pinned to the document top, covering the navbar; it
           provides its own links since the nav underneath is unreadable on black. */}
       <div className="absolute top-0 left-0 z-20 h-[100svh] w-full overflow-hidden bg-black">
-        <BlackHole />
+        {/* the eye: Helix Nebula (NGC 7293) as a particle volume, NASA/ESA */}
+        <ParticleImage
+          src="/misc/helix.jpg"
+          variant="background"
+          sampleWidth={1000}
+        />
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.9),0_0_18px_rgba(0,0,0,0.7)]">
           <h1 className="text-4xl font-semibold tracking-tighter md:text-5xl">
             Tom Jeong
