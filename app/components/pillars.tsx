@@ -61,11 +61,10 @@ export function Pillars() {
       const aspect = mount.clientWidth / mount.clientHeight
       camera.aspect = aspect
       const tan = Math.tan((camera.fov * Math.PI) / 360)
-      // the source image matches the screen's orientation, so cover the
-      // view, with margin so pointer tilt doesn't reveal the edges
+      // start with the whole image in frame, with a little margin around it
       const zh = imageH / 2 / tan
       const zw = W / 2 / (tan * aspect)
-      coverZ = Math.min(zh, zw) * 0.88
+      coverZ = Math.max(zh, zw) * 1.12
       camera.updateProjectionMatrix()
       applyView()
     }
@@ -88,7 +87,7 @@ export function Pillars() {
 
     const buildParticles = (img: HTMLImageElement) => {
       const landscape = mount.clientWidth > mount.clientHeight
-      const sampleW = landscape ? 640 : 200
+      const sampleW = landscape ? 800 : 220
       const sampleH = Math.round((sampleW * img.height) / img.width)
       imageH = (W * img.height) / img.width
       fitCamera()
@@ -198,7 +197,7 @@ export function Pillars() {
     }
     const onWheel = (e: WheelEvent) => {
       e.preventDefault()
-      zoom = Math.max(1, Math.min(4.5, zoom * Math.exp(-e.deltaY * 0.0012)))
+      zoom = Math.max(1, Math.min(6, zoom * Math.exp(-e.deltaY * 0.0012)))
       applyView()
     }
     window.addEventListener('pointermove', onPointerMove)

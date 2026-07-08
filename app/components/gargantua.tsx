@@ -62,9 +62,10 @@ export function Gargantua() {
       const aspect = mount.clientWidth / mount.clientHeight
       camera.aspect = aspect
       const tan = Math.tan((camera.fov * Math.PI) / 360)
+      // start with the whole structure in frame, with margin to spare
       const zh = imageH / 2 / tan
       const zw = W / 2 / (tan * aspect)
-      coverZ = Math.min(zh, zw) * 0.88
+      coverZ = Math.max(zh, zw) * 1.15
       camera.updateProjectionMatrix()
       applyView()
     }
@@ -101,7 +102,7 @@ export function Gargantua() {
 
     const buildParticles = (img: HTMLImageElement) => {
       const isSmall = window.innerWidth < 768
-      const sampleW = isSmall ? 320 : 640
+      const sampleW = isSmall ? 360 : 800
       const sampleH = Math.round((sampleW * img.height) / img.width)
       imageH = (W * img.height) / img.width
       fitCamera()
@@ -158,7 +159,7 @@ export function Gargantua() {
             oR.push(radius)
             fx.push(y)
             th.push(Math.atan2(z, x))
-            om.push(Math.min(0.4, 25 / Math.pow(Math.max(radius, 8), 1.5)))
+            om.push(0.04 + Math.min(0.16, 10 / Math.pow(Math.max(radius, 10), 1.5)))
           } else {
             // lensed halo: slide along the ring in the image plane
             const rho = Math.hypot(x, y - bandY)
@@ -166,7 +167,11 @@ export function Gargantua() {
             oR.push(rho)
             fx.push(z)
             th.push(Math.atan2(y - bandY, x))
-            om.push(Math.min(0.3, 16 / Math.pow(Math.max(rho, 8), 1.5)))
+            // the halo's shape only reads right in its original orientation,
+            // so instead of circulating it shimmers: particles oscillate
+            // along their arcs as a radial traveling wave (this slot stores
+            // the wave phase, not an angular speed)
+            om.push(rho * 0.18)
           }
           pos.push(x, y, z)
           col.push(
@@ -246,7 +251,7 @@ export function Gargantua() {
     }
     const onWheel = (e: WheelEvent) => {
       e.preventDefault()
-      zoom = Math.max(1, Math.min(4.5, zoom * Math.exp(-e.deltaY * 0.0012)))
+      zoom = Math.max(1, Math.min(6, zoom * Math.exp(-e.deltaY * 0.0012)))
       applyView()
     }
     window.addEventListener('pointermove', onPointerMove)
@@ -264,13 +269,15 @@ export function Gargantua() {
 
       if (positions && posAttr && kind && orbitR && fixedC && theta0 && omega) {
         for (let i = 0; i < count; i++) {
-          const angle = theta0[i] + omega[i] * t
           const i3 = i * 3
           if (kind[i] === 0) {
+            const angle = theta0[i] + omega[i] * t
             positions[i3] = orbitR[i] * Math.cos(angle)
             positions[i3 + 1] = fixedC[i]
             positions[i3 + 2] = orbitR[i] * Math.sin(angle)
           } else {
+            const angle =
+              theta0[i] + 0.07 * Math.sin(0.5 * t + omega[i])
             positions[i3] = orbitR[i] * Math.cos(angle)
             positions[i3 + 1] = bandY + orbitR[i] * Math.sin(angle)
             positions[i3 + 2] = fixedC[i]
