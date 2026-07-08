@@ -54,6 +54,16 @@ export default function Page() {
               </p>
             </div>
           </Link>
+          <Link className="flex flex-col space-y-1 mb-4" href="/collision">
+            <div className="w-full flex flex-col md:flex-row md:items-baseline space-x-0 md:space-x-2">
+              <p className="font-readout w-[110px] shrink-0 whitespace-nowrap text-neutral-400">
+                interactive
+              </p>
+              <p className="tracking-tight text-neutral-100">
+                Collision — the Milky Way meets Andromeda, live N-body
+              </p>
+            </div>
+          </Link>
           <Link className="flex flex-col space-y-1 mb-4" href="/blackhole">
             <div className="w-full flex flex-col md:flex-row md:items-baseline space-x-0 md:space-x-2">
               <p className="font-readout w-[110px] shrink-0 whitespace-nowrap text-neutral-400">

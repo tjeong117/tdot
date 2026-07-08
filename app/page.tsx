@@ -42,6 +42,11 @@ export default function Page() {
       src: '/misc/blackhole-src.jpg',
       caption: 'accretion · nasa gsfc visualization, 2019',
     },
+    {
+      key: 'sky',
+      src: null,
+      caption: 'milky way × andromeda · the next six billion years',
+    },
     { key: 'sky', src: null, caption: 'the night sky · 2,061 stars, hyg catalog' },
     { key: 'butterfly', src: '/misc/butterfly.jpg', caption: BUTTERFLY_CAPTION },
   ]
@@ -131,6 +136,20 @@ export default function Page() {
           </p>
           <p className="font-readout text-neutral-400 group-hover:text-neutral-200 transition-colors">
             drag to orbit →
+          </p>
+        </Link>
+      </Card>
+
+      <Card>
+        <Link href="/collision" className="group block">
+          <h2 className="ring-rule mb-3 text-xl font-semibold tracking-tighter">
+            Collision
+          </h2>
+          <p className="mb-3 text-sm text-neutral-300">
+            {`The Milky Way–Andromeda merger, simulated live in your browser — twenty-six thousand stars thrown into tidal tails over six billion years, on a timeline you can scrub.`}
+          </p>
+          <p className="font-readout text-neutral-400 group-hover:text-neutral-200 transition-colors">
+            press play →
           </p>
         </Link>
       </Card>

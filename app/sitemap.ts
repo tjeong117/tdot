@@ -16,6 +16,7 @@ export default async function sitemap() {
     '/sky',
     '/misc',
     '/blackhole',
+    '/collision',
     ...Object.keys(ARTIFACTS).map((slug) => `/nebula/${slug}`),
   ].map((route) => ({
     url: `${baseUrl}${route}`,

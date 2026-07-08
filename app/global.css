@@ -154,6 +154,11 @@ button:hover > .rail-tick {
   background: #e3b264;
 }
 
+/* Timeline slider on the collision sim */
+.eh-range {
+  accent-color: #e3b264;
+}
+
 /* Gold hover for nav/footer links; -bright variant for the always-dark hero */
 .eh-hover {
   transition: color 0.15s;
