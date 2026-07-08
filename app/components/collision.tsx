@@ -29,7 +29,7 @@ const FRIC_K = 0.03
 const STEPS_TOTAL = 1300
 const GYR_TOTAL = 6.0 // display mapping; the sim itself is unitless
 const PLAY_RATE = STEPS_TOTAL / 60 // steps per second: full story in ~1 min
-const CATCHUP = 80 // max sim steps per frame while scrubbing
+const CATCHUP = 50 // max sim steps per frame while scrubbing
 
 function mulberry32(seed: number) {
   let a = seed
@@ -103,7 +103,7 @@ export function Collision() {
     controls.autoRotateSpeed = 0.2
 
     const isSmall = window.innerWidth < 768
-    const N = isSmall ? 12000 : 26000
+    const N = isSmall ? 30000 : 90000
     const nMW = Math.round((N * 12) / 26)
     const galaxies: Galaxy[] = [
       {
@@ -230,7 +230,7 @@ export function Collision() {
           if (t > 0.25 && rnd() < 0.22) {
             ;[cr, cg, cb] = gal.accent
           }
-          const bright = (0.13 + 0.17 * rnd()) * (s < nBulge ? 1.1 : 1)
+          const bright = (0.1 + 0.13 * rnd()) * (s < nBulge ? 1.1 : 1)
           starCol[i3] = cr * bright
           starCol[i3 + 1] = cg * bright
           starCol[i3 + 2] = cb * bright
@@ -322,7 +322,7 @@ export function Collision() {
     starGeometry.setAttribute('position', posAttr)
     starGeometry.setAttribute('color', new THREE.BufferAttribute(starCol, 3))
     const starMaterial = new THREE.PointsMaterial({
-      size: 0.55 * renderer.getPixelRatio(),
+      size: 0.34 * renderer.getPixelRatio(),
       map: spriteTexture,
       vertexColors: true,
       transparent: true,
