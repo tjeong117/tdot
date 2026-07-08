@@ -69,20 +69,6 @@ export const ARTIFACTS: Record<string, Artifact> = {
     credit: 'NASA, ESA, CSA, STScI, T. Temim — JWST MIRI & NIRCam, 2024',
     options: { src: '/misc/crab.jpg' },
   },
-  jupiter: {
-    title: 'Jupiter',
-    blurb:
-      "Jupiter in Webb's near-infrared — auroras blazing high over both poles, and the Great Red Spot glowing white because its high-altitude haze reflects sunlight straight back at the telescope.",
-    credit: 'NASA, ESA, CSA, Jupiter ERS Team, Judy Schmidt — JWST NIRCam, 2022',
-    options: { src: '/misc/jupiter.jpg' },
-  },
-  saturn: {
-    title: 'Saturn',
-    blurb:
-      'Saturn in infrared — methane in the atmosphere soaks up sunlight and mutes the planet to soft amber, while the ice rings, free of methane, stay dazzling. The pinpoints nearby are its moons.',
-    credit: 'NASA, ESA, CSA, STScI — JWST NIRCam, 2024',
-    options: { src: '/misc/saturn.jpg' },
-  },
   'deep-field': {
     title: 'Deep Field',
     blurb:

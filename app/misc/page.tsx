@@ -73,8 +73,6 @@ export default function Page() {
             ['butterfly', 'Butterfly — 20,000-degree wings'],
             ['crab', 'Crab Nebula — the wreckage of 1054, still glowing'],
             ['tarantula', 'Tarantula Nebula — the Local Group’s star factory'],
-            ['jupiter', 'Jupiter — auroras and the Great Red Spot in infrared'],
-            ['saturn', 'Saturn — ice rings blazing around a methane-muted globe'],
             ['deep-field', 'Deep Field — fall into SMACS 0723, galaxy by galaxy'],
           ].map(([slug, label]) => (
             <Link
