@@ -148,7 +148,8 @@ export function Gargantua() {
           if (lum < 0.03) continue
           const x = (u / sw - 0.5) * W
           const y = -(v / sh - 0.5) * imageH
-          if (Math.abs(y - bandY) < bandHalf) {
+          const dy = Math.abs(y - bandY)
+          if (dy < bandHalf) {
             const bucket = Math.min(
               NB - 1,
               Math.floor((Math.abs(x) / (W / 2)) * NB)
@@ -158,6 +159,21 @@ export function Gargantua() {
             acc[bucket][2] += b
             acc[bucket][3] += lum
             acc[bucket][4]++
+            // feather: keep band pixels near the strip's edge in the halo
+            // too, so the lensed dome connects to the disk without a hard
+            // black gap when viewed edge-on
+            if (Math.random() < Math.pow(dy / bandHalf, 2.2)) {
+              haloPos.push(
+                x + gauss() * 0.15,
+                y - bandY + gauss() * 0.15,
+                gauss() * 1.2
+              )
+              haloCol.push(
+                Math.max(0, lum + (r - lum) * saturation) * exposure,
+                Math.max(0, lum + (g - lum) * saturation) * exposure,
+                Math.max(0, lum + (b - lum) * saturation) * exposure
+              )
+            }
           } else {
             // lensed halo, kept as the measured image, billboarded later
             haloPos.push(x + gauss() * 0.15, y - bandY + gauss() * 0.15, gauss() * 1.2)
@@ -232,7 +248,7 @@ export function Gargantua() {
         const th = Math.random() * Math.PI * 2
         radius[i] = r
         theta0[i] = th
-        height[i] = gauss() * (0.4 + 0.02 * r)
+        height[i] = gauss() * (0.65 + 0.026 * r)
         omega[i] = 0.42 * Math.pow(r / R_IN, -1.5)
         const [pr, pg, pb, plum] = profile[bIdx]
         const scale = 0.34
