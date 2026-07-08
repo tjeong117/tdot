@@ -13,6 +13,9 @@ const navItems = {
   '/sky': {
     name: 'sky',
   },
+  '/misc': {
+    name: 'misc',
+  },
 }
 
 export function Navbar() {
