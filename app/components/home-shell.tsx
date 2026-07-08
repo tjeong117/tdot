@@ -133,6 +133,27 @@ export function HomeShell({
       >
         {children}
       </div>
+      <div className="absolute right-2 top-1/2 z-20 flex -translate-y-1/2 flex-col items-end md:right-3">
+        {scenes.map((scene, i) => (
+          <button
+            key={i}
+            type="button"
+            aria-label={`section ${i + 1} of ${scenes.length}`}
+            aria-current={i === active}
+            className="cursor-pointer py-[3px] pl-3"
+            onClick={() => {
+              const card = railRef.current?.querySelectorAll('[data-card]')[i]
+              card
+                ?.closest('section')
+                ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            }}
+          >
+            <span
+              className={`rail-tick${i === active ? ' rail-tick-active' : ''}`}
+            />
+          </button>
+        ))}
+      </div>
     </div>
   )
 }
