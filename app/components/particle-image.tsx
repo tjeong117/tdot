@@ -21,8 +21,9 @@ export type ParticleImageProps = {
   lumThreshold?: number
   depth?: 'luminance' | 'galaxies'
   /* 'explorer' = fullscreen artifact with zoom/pan/loader;
+     'panel' = interactive pane (zoom/pan/tilt), absolutely positioned, no loader;
      'background' = page backdrop: hover tilt only, page keeps scrolling */
-  variant?: 'explorer' | 'background'
+  variant?: 'explorer' | 'panel' | 'background'
 }
 
 export function ParticleImage({
@@ -262,7 +263,7 @@ export function ParticleImage({
     const prefersReducedMotion = window.matchMedia(
       '(prefers-reduced-motion: reduce)'
     ).matches
-    const interactive = variant === 'explorer'
+    const interactive = variant !== 'background'
     if (interactive) {
       renderer.domElement.style.touchAction = 'none'
       renderer.domElement.style.cursor = 'grab'
@@ -348,7 +349,7 @@ export function ParticleImage({
       <div
         ref={mountRef}
         className={`${
-          variant === 'background' ? 'absolute' : 'fixed'
+          variant === 'explorer' ? 'fixed' : 'absolute'
         } inset-0 bg-black opacity-0 transition-opacity duration-[1500ms]`}
       />
       {variant === 'explorer' && <MirrorLoader done={ready} />}

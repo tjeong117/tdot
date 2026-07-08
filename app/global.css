@@ -111,6 +111,17 @@
   }
 }
 
+/* The sky card's panel: the theme starfield, fading in like the canvases */
+.panel-starfield {
+  background-color: #000;
+  animation: eh-fadein 1.4s ease both;
+}
+@keyframes eh-fadein {
+  from {
+    opacity: 0;
+  }
+}
+
 /* Home scroll rail: cards lift and light up as they enter the viewport */
 .home-card {
   opacity: 0.25;
