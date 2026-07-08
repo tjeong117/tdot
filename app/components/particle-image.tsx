@@ -113,26 +113,30 @@ export function ParticleImage({
     const landscape = mount.clientWidth > mount.clientHeight
 
     // flood fill over the thresholded mask; returns a per-pixel component id
-    // and a per-component depth so each galaxy sits on its own layer
+    // and a per-component depth. Distance comes from a redshift proxy: the
+    // redder a galaxy (Doppler-shifted light), the older and farther it is,
+    // so red components recede and blue-white ones come near.
     const galaxyDepths = (
       mask: Uint8Array,
-      lums: Float32Array,
+      data: Uint8ClampedArray,
       sw: number,
       sh: number
     ) => {
       const labels = new Int32Array(sw * sh).fill(-1)
-      const compScore: number[] = []
+      const compRedshift: number[] = []
       const stack: number[] = []
       let n = 0
       for (let start = 0; start < sw * sh; start++) {
         if (!mask[start] || labels[start] !== -1) continue
-        let sum = 0
+        let sumR = 0
+        let sumB = 0
         let area = 0
         stack.push(start)
         labels[start] = n
         while (stack.length) {
           const p = stack.pop()!
-          sum += lums[p]
+          sumR += data[p * 4]
+          sumB += data[p * 4 + 2]
           area++
           const px = p % sw
           const py = (p / sw) | 0
@@ -147,16 +151,17 @@ export function ParticleImage({
             }
           }
         }
-        // rank by MEAN brightness: vivid galaxies come near, the faint (and
-        // any diffuse noise floor, however large) recedes
-        compScore.push(sum / area)
+        // mean(R) - mean(B): the redshift proxy
+        compRedshift.push((sumR - sumB) / area)
         n++
       }
-      const order = compScore.map((v, i) => [v, i] as const).sort((a, b) => a[0] - b[0])
+      const order = compRedshift
+        .map((v, i) => [v, i] as const)
+        .sort((a, b) => a[0] - b[0])
       const depthOf = new Float32Array(n)
       order.forEach(([, idx], rank) => {
-        const pct = n > 1 ? rank / (n - 1) : 1
-        depthOf[idx] = -95 + 115 * Math.pow(pct, 0.65)
+        const pct = n > 1 ? rank / (n - 1) : 0 // 0 = bluest, 1 = reddest
+        depthOf[idx] = 25 - 138 * Math.pow(pct, 0.85)
       })
       return { labels, depthOf }
     }
@@ -192,7 +197,7 @@ export function ParticleImage({
         mask[p] = lum >= lumThreshold ? 1 : 0
       }
       const galaxy =
-        depth === 'galaxies' ? galaxyDepths(mask, lums, sw, sh) : null
+        depth === 'galaxies' ? galaxyDepths(mask, data, sw, sh) : null
 
       const positions: number[] = []
       const colors: number[] = []
