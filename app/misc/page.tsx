@@ -37,7 +37,7 @@ export default function Page() {
             sky
           </Link>
         </nav>
-        <div className="pointer-events-auto rounded-2xl border border-white/10 bg-black/45 p-6 backdrop-blur-sm">
+        <div className="pointer-events-auto rounded-2xl bg-black/45 p-6 backdrop-blur-sm">
           <h1 className="ring-rule font-semibold text-2xl mb-6 tracking-tighter">
             Miscellaneous
           </h1>

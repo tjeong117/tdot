@@ -123,12 +123,37 @@ export function ParticleImage({
       sw: number,
       sh: number
     ) => {
+      // dilate the mask before labeling so a galaxy's bright core and faint
+      // skirt land in ONE component — fragments at different depths would
+      // tear galaxies into radial streaks under parallax
+      let grown = mask
+      for (let iter = 0; iter < 3; iter++) {
+        const next = new Uint8Array(sw * sh)
+        for (let p = 0; p < sw * sh; p++) {
+          if (grown[p]) {
+            next[p] = 1
+            continue
+          }
+          const px = p % sw
+          const py = (p / sw) | 0
+          if (
+            (px > 0 && grown[p - 1]) ||
+            (px < sw - 1 && grown[p + 1]) ||
+            (py > 0 && grown[p - sw]) ||
+            (py < sh - 1 && grown[p + sw])
+          ) {
+            next[p] = 1
+          }
+        }
+        grown = next
+      }
+
       const labels = new Int32Array(sw * sh).fill(-1)
       const compRedshift: number[] = []
       const stack: number[] = []
       let n = 0
       for (let start = 0; start < sw * sh; start++) {
-        if (!mask[start] || labels[start] !== -1) continue
+        if (!grown[start] || labels[start] !== -1) continue
         let sumR = 0
         let sumB = 0
         let area = 0
@@ -146,7 +171,7 @@ export function ParticleImage({
             const ny = py + dy
             if (nx < 0 || ny < 0 || nx >= sw || ny >= sh) continue
             const np = ny * sw + nx
-            if (mask[np] && labels[np] === -1) {
+            if (grown[np] && labels[np] === -1) {
               labels[np] = n
               stack.push(np)
             }
@@ -215,7 +240,7 @@ export function ParticleImage({
           const x = (u / sw - 0.5) * W + gauss() * 0.15
           const y = -(v / sh - 0.5) * H + gauss() * 0.15
           const z = galaxy
-            ? galaxy.depthOf[galaxy.labels[p]] + gauss() * 1.6
+            ? galaxy.depthOf[galaxy.labels[p]] + gauss() * 1.1
             : Math.pow(lum, 1.3) * 46 + gauss() * (3 + 11 * lum) - 18
           positions.push(x, y, z)
           colors.push(

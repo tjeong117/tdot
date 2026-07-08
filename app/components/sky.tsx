@@ -297,7 +297,7 @@ export function Sky() {
     }`
 
   return (
-    <div className="relative h-[70svh] min-h-[440px] overflow-hidden rounded-2xl border border-neutral-800 bg-black">
+    <div className="relative h-[70svh] min-h-[440px] overflow-hidden rounded-2xl bg-black">
       <div ref={mountRef} className="absolute inset-0" />
       <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between p-4">
         <p className="font-readout text-neutral-500">

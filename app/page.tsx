@@ -5,7 +5,7 @@ import { formatDate, getBlogPosts } from 'app/blog/utils'
 import { papers, formatPaperDate } from 'app/research/page'
 
 const cardShell =
-  'home-card w-full max-w-md rounded-2xl border border-white/10 bg-black/50 p-6 backdrop-blur-sm'
+  'home-card w-full max-w-md p-6 [text-shadow:0_1px_3px_rgba(0,0,0,0.9)] max-md:rounded-2xl max-md:bg-black/45 max-md:backdrop-blur-sm'
 
 function Card({ children }: { children: React.ReactNode }) {
   return (

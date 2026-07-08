@@ -76,8 +76,8 @@ export const ARTIFACTS: Record<string, Artifact> = {
     credit: 'NASA, ESA, CSA, STScI — JWST NIRCam, 2022',
     options: {
       src: '/misc/deep-field.jpg',
-      exposure: 0.7,
-      lumThreshold: 0.075,
+      exposure: 0.8,
+      lumThreshold: 0.085,
       depth: 'galaxies',
     },
   },
