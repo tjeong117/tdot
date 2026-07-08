@@ -25,7 +25,7 @@ export type ParticleImageProps = {
 export function ParticleImage({
   src,
   worldWidth = 160,
-  sampleWidth = 800,
+  sampleWidth = 1250,
   exposure = 0.55,
   saturation = 1.1,
   lumThreshold = 0.045,
