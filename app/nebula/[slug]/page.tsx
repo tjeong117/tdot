@@ -1,0 +1,107 @@
+import Link from 'next/link'
+import { notFound } from 'next/navigation'
+import {
+  ParticleImage,
+  type ParticleImageProps,
+} from 'app/components/particle-image'
+
+type Artifact = {
+  title: string
+  blurb: string
+  credit: string
+  options: ParticleImageProps
+}
+
+export const ARTIFACTS: Record<string, Artifact> = {
+  carina: {
+    title: 'Cosmic Cliffs',
+    blurb:
+      "The edge of NGC 3324 in the Carina Nebula — a wall of gas seven light-years tall, sculpted by ultraviolet radiation from newborn stars above it.",
+    credit: 'NASA, ESA, CSA, STScI — JWST NIRCam, 2022',
+    options: { src: '/misc/carina.jpg', exposure: 0.85, saturation: 1.35 },
+  },
+  'southern-ring': {
+    title: 'Southern Ring',
+    blurb:
+      'NGC 3132 — a dying star flinging off its outer layers in shells of gas and dust, with the white dwarf that made them visible at the center.',
+    credit: 'NASA, ESA, CSA, STScI — JWST NIRCam, 2022',
+    options: { src: '/misc/southern-ring.jpg', exposure: 0.85, saturation: 1.3 },
+  },
+  tarantula: {
+    title: 'Tarantula Nebula',
+    blurb:
+      '30 Doradus — the most violent star-forming region in the Local Group, 161,000 light-years away, with tens of thousands of young stars burning through their cocoon.',
+    credit: 'NASA, ESA, CSA, STScI — JWST NIRCam, 2022',
+    options: { src: '/misc/tarantula.jpg', exposure: 0.85, saturation: 1.35 },
+  },
+  'deep-field': {
+    title: 'Deep Field',
+    blurb:
+      "Webb's First Deep Field — galaxy cluster SMACS 0723, thousands of galaxies in a patch of sky the size of a grain of sand at arm's length. Every galaxy here sits on its own depth layer: zoom in and fall billions of years into the frame.",
+    credit: 'NASA, ESA, CSA, STScI — JWST NIRCam, 2022',
+    options: {
+      src: '/misc/deep-field.jpg',
+      exposure: 1.1,
+      saturation: 1.3,
+      lumThreshold: 0.075,
+      depth: 'galaxies',
+    },
+  },
+}
+
+export function generateStaticParams() {
+  return Object.keys(ARTIFACTS).map((slug) => ({ slug }))
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}) {
+  const { slug } = await params
+  const artifact = ARTIFACTS[slug]
+  if (!artifact) return {}
+  return {
+    title: artifact.title,
+    description: `${artifact.blurb.slice(0, 150)} — rebuilt as an explorable particle volume.`,
+  }
+}
+
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}) {
+  const { slug } = await params
+  const artifact = ARTIFACTS[slug]
+  if (!artifact) notFound()
+
+  return (
+    <div className="fixed inset-0 z-30 overflow-hidden bg-black text-white">
+      <ParticleImage {...artifact.options} />
+      <div className="pointer-events-none absolute inset-0 z-10 flex flex-col justify-between p-6 md:p-10">
+        <nav className="pointer-events-auto flex flex-row space-x-4 text-neutral-300 [text-shadow:0_1px_3px_rgba(0,0,0,0.9)]">
+          <Link href="/" className="eh-hover-bright">
+            home
+          </Link>
+          <Link href="/misc" className="eh-hover-bright">
+            misc
+          </Link>
+          <Link href="/sky" className="eh-hover-bright">
+            sky
+          </Link>
+        </nav>
+        <div className="max-w-xl [text-shadow:0_1px_3px_rgba(0,0,0,0.95),0_0_12px_rgba(0,0,0,0.8)]">
+          <h1 className="ring-rule font-semibold text-2xl mb-4 tracking-tighter">
+            {artifact.title}
+          </h1>
+          <p className="text-neutral-300 mb-3">{artifact.blurb}</p>
+          <p className="font-readout text-neutral-400">
+            drag to pan · scroll to zoom · move your cursor — imagery:{' '}
+            {artifact.credit}
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}

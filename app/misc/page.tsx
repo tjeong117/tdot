@@ -64,6 +64,25 @@ export default function Page() {
               </p>
             </div>
           </Link>
+          {[
+            ['carina', 'Cosmic Cliffs — the Carina Nebula in particles'],
+            ['southern-ring', 'Southern Ring — a dying star, shell by shell'],
+            ['tarantula', 'Tarantula Nebula — the Local Group’s star factory'],
+            ['deep-field', 'Deep Field — fall into SMACS 0723, galaxy by galaxy'],
+          ].map(([slug, label]) => (
+            <Link
+              key={slug}
+              className="flex flex-col space-y-1 mb-4"
+              href={`/nebula/${slug}`}
+            >
+              <div className="w-full flex flex-col md:flex-row md:items-baseline space-x-0 md:space-x-2">
+                <p className="font-readout w-[110px] shrink-0 whitespace-nowrap text-neutral-400">
+                  interactive
+                </p>
+                <p className="tracking-tight text-neutral-100">{label}</p>
+              </div>
+            </Link>
+          ))}
           {miscPosts.map((post) => (
             <Link
               key={post.slug}

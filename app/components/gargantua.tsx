@@ -1,21 +1,35 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+import { MirrorLoader } from './mirror-loader'
 
-/* NASA's 2019 black hole visualization (Jeremy Schnittman, NASA GSFC —
-   public NASA imagery), rebuilt with the same technique as the Pillars:
-   every bright pixel becomes a particle with depth extruded from luminance.
-   Then it's set in motion — each particle is placed on a circular Keplerian
-   orbit around the vertical axis through the shadow, with angular speed
-   falling off as r^-1.5, so the inner disk visibly outruns the outer disk
-   and the lensed halo swirls like a crown. */
+/* A true 3D reconstruction of NASA's 2019 black hole visualization
+   (Jeremy Schnittman, NASA GSFC — public NASA imagery).
+
+   Instead of extruding the flat image, the image is used as measurement:
+   - The edge-on disk band is collapsed into a radial brightness/color
+     profile, which seeds a real three-dimensional annulus of ~140k
+     particles on genuine Keplerian orbits (inner disk outruns the outer).
+   - Doppler beaming is computed live: particles moving toward the camera
+     brighten, so the bright side always faces the approaching flow no
+     matter where you orbit.
+   - The lensed halo (the far side of the disk bent over and under the
+     shadow) is axisymmetric in reality, so its image always faces the
+     observer: the halo billboards to the camera, which is physically what
+     a real black hole's lensed image does as you move around it. */
 
 const IMG_URL = '/misc/blackhole-src.jpg'
-const W = 170 // world width of the reconstruction
+const W = 170 // world width of the source image
+const R_IN = 20
+const R_OUT = 85
+const SHADOW_R = 13
+const BEAM = 0.8 // doppler beaming strength
 
 export function Gargantua() {
   const mountRef = useRef<HTMLDivElement | null>(null)
+  const [ready, setReady] = useState(false)
 
   useEffect(() => {
     const mount = mountRef.current
@@ -28,49 +42,35 @@ export function Gargantua() {
       0.1,
       2000
     )
+    camera.position.set(0, 26, 128)
     const renderer = new THREE.WebGLRenderer({ antialias: true })
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     renderer.setSize(mount.clientWidth, mount.clientHeight)
     mount.appendChild(renderer.domElement)
+    renderer.domElement.style.touchAction = 'none'
 
-    const group = new THREE.Group()
-    scene.add(group)
+    const controls = new OrbitControls(camera, renderer.domElement)
+    controls.enableDamping = true
+    controls.dampingFactor = 0.06
+    controls.enablePan = false
+    controls.minDistance = 55
+    controls.maxDistance = 300
+    // keep the view near the disk plane, where the lensed geometry is honest
+    controls.minPolarAngle = 0.9
+    controls.maxPolarAngle = 2.25
+    controls.autoRotate = true
+    controls.autoRotateSpeed = 0.25
 
     const disposables: { dispose: () => void }[] = []
     let frameId = 0
-    let imageH = (W * 9) / 16
 
-    // free exploration: wheel zooms, drag pans, hover tilts
-    let coverZ = 100
-    let zoom = 1
-    let panX = 0
-    let panY = 0
+    // event horizon
+    const shadowGeometry = new THREE.SphereGeometry(SHADOW_R, 64, 64)
+    const shadowMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 })
+    disposables.push(shadowGeometry, shadowMaterial)
+    scene.add(new THREE.Mesh(shadowGeometry, shadowMaterial))
 
-    const applyView = () => {
-      const tan = Math.tan((camera.fov * Math.PI) / 360)
-      const z = coverZ / zoom
-      const visW = 2 * z * tan * camera.aspect
-      const visH = 2 * z * tan
-      const maxX = Math.max(0, (W - visW) / 2 + 8)
-      const maxY = Math.max(0, (imageH - visH) / 2 + 8)
-      panX = Math.max(-maxX, Math.min(maxX, panX))
-      panY = Math.max(-maxY, Math.min(maxY, panY))
-      camera.position.set(panX, panY, z)
-    }
-
-    const fitCamera = () => {
-      const aspect = mount.clientWidth / mount.clientHeight
-      camera.aspect = aspect
-      const tan = Math.tan((camera.fov * Math.PI) / 360)
-      // start with the whole structure in frame, with margin to spare
-      const zh = imageH / 2 / tan
-      const zw = W / 2 / (tan * aspect)
-      coverZ = Math.max(zh, zw) * 1.15
-      camera.updateProjectionMatrix()
-      applyView()
-    }
-    fitCamera()
-
+    // soft sprite
     const spriteCanvas = document.createElement('canvas')
     spriteCanvas.width = spriteCanvas.height = 64
     const sctx = spriteCanvas.getContext('2d')!
@@ -85,43 +85,40 @@ export function Gargantua() {
 
     const gauss = () => Math.random() + Math.random() - 1
 
-    // orbit state, filled once the image is sampled.
-    // kind 0 = disk band: revolves in x-z around the vertical axis, sweeping
-    //   the edge-on band into a true volumetric disk.
-    // kind 1 = lensed halo: rotates in the image plane around the shadow, so
-    //   the arcs slide along themselves and keep their shape.
+    // filled by buildScene
+    const haloGroup = new THREE.Group()
+    scene.add(haloGroup)
     let positions: Float32Array | null = null
+    let colors: Float32Array | null = null
+    let baseColors: Float32Array | null = null
     let posAttr: THREE.BufferAttribute | null = null
-    let kind: Uint8Array | null = null
-    let orbitR: Float32Array | null = null
-    let fixedC: Float32Array | null = null
+    let colAttr: THREE.BufferAttribute | null = null
+    let radius: Float32Array | null = null
+    let height: Float32Array | null = null
     let theta0: Float32Array | null = null
     let omega: Float32Array | null = null
-    let bandY = 0
     let count = 0
 
-    const buildParticles = (img: HTMLImageElement) => {
+    const buildScene = (img: HTMLImageElement) => {
       const isSmall = window.innerWidth < 768
-      const sampleW = isSmall ? 360 : 800
-      const sampleH = Math.round((sampleW * img.height) / img.width)
-      imageH = (W * img.height) / img.width
-      fitCamera()
+      const sw = 640
+      const sh = Math.round((sw * img.height) / img.width)
+      const imageH = (W * img.height) / img.width
 
       const canvas = document.createElement('canvas')
-      canvas.width = sampleW
-      canvas.height = sampleH
+      canvas.width = sw
+      canvas.height = sh
       const ctx = canvas.getContext('2d', { willReadFrequently: true })!
-      ctx.drawImage(img, 0, 0, sampleW, sampleH)
-      const data = ctx.getImageData(0, 0, sampleW, sampleH).data
+      ctx.drawImage(img, 0, 0, sw, sh)
+      const data = ctx.getImageData(0, 0, sw, sh).data
 
-      const H = imageH
-      // the disk band = the brightest pixel row; halo = everything else
+      // the disk band = the brightest pixel row
       let bandRow = 0
       let bandBest = -1
-      for (let v = 0; v < sampleH; v++) {
+      for (let v = 0; v < sh; v++) {
         let sum = 0
-        for (let u = 0; u < sampleW; u++) {
-          const i = (v * sampleW + u) * 4
+        for (let u = 0; u < sw; u++) {
+          const i = (v * sw + u) * 4
           sum += data[i] + data[i + 1] + data[i + 2]
         }
         if (sum > bandBest) {
@@ -129,73 +126,126 @@ export function Gargantua() {
           bandRow = v
         }
       }
-      bandY = -(bandRow / sampleH - 0.5) * H
-      const bandHalf = H * 0.055
+      const bandY = -(bandRow / sh - 0.5) * imageH
+      const bandHalf = imageH * 0.055
 
-      const pos: number[] = []
-      const col: number[] = []
-      const kd: number[] = []
-      const oR: number[] = []
-      const fx: number[] = []
-      const th: number[] = []
-      const om: number[] = []
+      // --- radial color/brightness profile measured from the band ---
+      const NB = 96
+      const acc = Array.from({ length: NB }, () => [0, 0, 0, 0, 0]) // r,g,b,lum,n
       const exposure = 0.6
       const saturation = 1.2
-      for (let v = 0; v < sampleH; v++) {
-        for (let u = 0; u < sampleW; u++) {
-          const i = (v * sampleW + u) * 4
+      const haloPos: number[] = []
+      const haloCol: number[] = []
+      for (let v = 0; v < sh; v++) {
+        for (let u = 0; u < sw; u++) {
+          const i = (v * sw + u) * 4
           const r = data[i] / 255
           const g = data[i + 1] / 255
           const b = data[i + 2] / 255
           const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b
           if (lum < 0.03) continue
-          const x = (u / sampleW - 0.5) * W + gauss() * 0.15
-          const y = -(v / sampleH - 0.5) * H + gauss() * 0.15
-          const z = Math.pow(lum, 1.3) * 14 + gauss() * (1.2 + 5 * lum) - 6
+          const x = (u / sw - 0.5) * W
+          const y = -(v / sh - 0.5) * imageH
           if (Math.abs(y - bandY) < bandHalf) {
-            // disk band: slow Keplerian revolution about the vertical axis
-            const radius = Math.hypot(x, z)
-            kd.push(0)
-            oR.push(radius)
-            fx.push(y)
-            th.push(Math.atan2(z, x))
-            om.push(0.04 + Math.min(0.16, 10 / Math.pow(Math.max(radius, 10), 1.5)))
+            const bucket = Math.min(
+              NB - 1,
+              Math.floor((Math.abs(x) / (W / 2)) * NB)
+            )
+            acc[bucket][0] += r
+            acc[bucket][1] += g
+            acc[bucket][2] += b
+            acc[bucket][3] += lum
+            acc[bucket][4]++
           } else {
-            // lensed halo: slide along the ring in the image plane
-            const rho = Math.hypot(x, y - bandY)
-            kd.push(1)
-            oR.push(rho)
-            fx.push(z)
-            th.push(Math.atan2(y - bandY, x))
-            // the halo's shape only reads right in its original orientation,
-            // so instead of circulating it shimmers: particles oscillate
-            // along their arcs as a radial traveling wave (this slot stores
-            // the wave phase, not an angular speed)
-            om.push(rho * 0.18)
+            // lensed halo, kept as the measured image, billboarded later
+            haloPos.push(x + gauss() * 0.15, y - bandY + gauss() * 0.15, gauss() * 1.2)
+            haloCol.push(
+              Math.max(0, lum + (r - lum) * saturation) * exposure,
+              Math.max(0, lum + (g - lum) * saturation) * exposure,
+              Math.max(0, lum + (b - lum) * saturation) * exposure
+            )
           }
-          pos.push(x, y, z)
-          col.push(
-            Math.max(0, lum + (r - lum) * saturation) * exposure,
-            Math.max(0, lum + (g - lum) * saturation) * exposure,
-            Math.max(0, lum + (b - lum) * saturation) * exposure
-          )
         }
       }
+      const profile: [number, number, number, number][] = []
+      let lastFilled: [number, number, number, number] = [0.6, 0.25, 0.08, 0.2]
+      for (let bIdx = 0; bIdx < NB; bIdx++) {
+        const [r, g, b, lum, n] = acc[bIdx]
+        if (n > 3) {
+          lastFilled = [r / n, g / n, b / n, lum / n]
+        }
+        profile.push(lastFilled)
+      }
 
-      count = oR.length
-      positions = new Float32Array(pos)
-      kind = new Uint8Array(kd)
-      orbitR = new Float32Array(oR)
-      fixedC = new Float32Array(fx)
-      theta0 = new Float32Array(th)
-      omega = new Float32Array(om)
+      // --- halo points ---
+      const haloGeometry = new THREE.BufferGeometry()
+      haloGeometry.setAttribute(
+        'position',
+        new THREE.Float32BufferAttribute(haloPos, 3)
+      )
+      haloGeometry.setAttribute(
+        'color',
+        new THREE.Float32BufferAttribute(haloCol, 3)
+      )
+      const haloMaterial = new THREE.PointsMaterial({
+        size: (W / sw) * 2.3,
+        map: spriteTexture,
+        vertexColors: true,
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        sizeAttenuation: true,
+      })
+      disposables.push(haloGeometry, haloMaterial)
+      const haloPoints = new THREE.Points(haloGeometry, haloMaterial)
+      haloPoints.position.y = 0 // arcs are centered on the shadow
+      haloGroup.add(haloPoints)
+
+      // --- true 3D disk seeded from the radial profile ---
+      count = isSmall ? 50000 : 140000
+      positions = new Float32Array(count * 3)
+      colors = new Float32Array(count * 3)
+      baseColors = new Float32Array(count * 3)
+      radius = new Float32Array(count)
+      height = new Float32Array(count)
+      theta0 = new Float32Array(count)
+      omega = new Float32Array(count)
+
+      // radius CDF weighted by measured brightness x circumference
+      const cdf: number[] = []
+      let total = 0
+      for (let bIdx = 0; bIdx < NB; bIdx++) {
+        const rMid = ((bIdx + 0.5) / NB) * (W / 2)
+        const w =
+          rMid < R_IN || rMid > R_OUT ? 0 : Math.pow(profile[bIdx][3], 1.2) * rMid
+        total += w
+        cdf.push(total)
+      }
+
+      for (let i = 0; i < count; i++) {
+        const pick = Math.random() * total
+        let bIdx = 0
+        while (cdf[bIdx] < pick && bIdx < NB - 1) bIdx++
+        const r = ((bIdx + Math.random()) / NB) * (W / 2)
+        const th = Math.random() * Math.PI * 2
+        radius[i] = r
+        theta0[i] = th
+        height[i] = gauss() * (0.4 + 0.02 * r)
+        omega[i] = 0.42 * Math.pow(r / R_IN, -1.5)
+        const [pr, pg, pb, plum] = profile[bIdx]
+        const scale = 0.42
+        baseColors[i * 3] = Math.max(0, plum + (pr - plum) * 1.25) * scale
+        baseColors[i * 3 + 1] = Math.max(0, plum + (pg - plum) * 1.25) * scale
+        baseColors[i * 3 + 2] = Math.max(0, plum + (pb - plum) * 1.25) * scale
+      }
 
       const geometry = new THREE.BufferGeometry()
       posAttr = new THREE.BufferAttribute(positions, 3)
+      colAttr = new THREE.BufferAttribute(colors, 3)
       geometry.setAttribute('position', posAttr)
-      geometry.setAttribute('color', new THREE.Float32BufferAttribute(col, 3))
+      geometry.setAttribute('color', colAttr)
       const material = new THREE.PointsMaterial({
-        size: (W / sampleW) * 2.3,
+        size: 0.85,
         map: spriteTexture,
         vertexColors: true,
         transparent: true,
@@ -204,60 +254,20 @@ export function Gargantua() {
         sizeAttenuation: true,
       })
       disposables.push(geometry, material)
-      group.add(new THREE.Points(geometry, material))
+      scene.add(new THREE.Points(geometry, material))
+
       mount.style.opacity = '1'
+      setReady(true)
     }
 
     const img = new Image()
     img.src = IMG_URL
-    img.onload = () => buildParticles(img)
+    img.onload = () => buildScene(img)
 
-    let targetRX = 0
-    let targetRY = 0
-    let dragging = false
-    let lastX = 0
-    let lastY = 0
     const prefersReducedMotion = window.matchMedia(
       '(prefers-reduced-motion: reduce)'
     ).matches
-    renderer.domElement.style.touchAction = 'none'
-    renderer.domElement.style.cursor = 'grab'
-
-    const onPointerMove = (e: PointerEvent) => {
-      if (dragging) {
-        const tan = Math.tan((camera.fov * Math.PI) / 360)
-        const z = coverZ / zoom
-        panX -= (e.clientX - lastX) * ((2 * z * tan * camera.aspect) / mount.clientWidth)
-        panY += (e.clientY - lastY) * ((2 * z * tan) / mount.clientHeight)
-        lastX = e.clientX
-        lastY = e.clientY
-        applyView()
-        return
-      }
-      targetRY = (e.clientX / window.innerWidth - 0.5) * 0.5
-      targetRX = (e.clientY / window.innerHeight - 0.5) * 0.3
-    }
-    const onPointerDown = (e: PointerEvent) => {
-      dragging = true
-      lastX = e.clientX
-      lastY = e.clientY
-      renderer.domElement.setPointerCapture(e.pointerId)
-      renderer.domElement.style.cursor = 'grabbing'
-    }
-    const onPointerUp = (e: PointerEvent) => {
-      dragging = false
-      renderer.domElement.releasePointerCapture(e.pointerId)
-      renderer.domElement.style.cursor = 'grab'
-    }
-    const onWheel = (e: WheelEvent) => {
-      e.preventDefault()
-      zoom = Math.max(1, Math.min(6, zoom * Math.exp(-e.deltaY * 0.0012)))
-      applyView()
-    }
-    window.addEventListener('pointermove', onPointerMove)
-    renderer.domElement.addEventListener('pointerdown', onPointerDown)
-    renderer.domElement.addEventListener('pointerup', onPointerUp)
-    renderer.domElement.addEventListener('wheel', onWheel, { passive: false })
+    if (prefersReducedMotion) controls.autoRotate = false
 
     let last = performance.now()
     let t = 0
@@ -267,45 +277,51 @@ export function Gargantua() {
       last = now
       if (!prefersReducedMotion) t += dt
 
-      if (positions && posAttr && kind && orbitR && fixedC && theta0 && omega) {
+      if (positions && colors && baseColors && posAttr && colAttr && radius) {
+        // camera direction in the disk plane, for doppler beaming
+        const cLen = Math.hypot(camera.position.x, camera.position.z) || 1
+        const cx = camera.position.x / cLen
+        const cz = camera.position.z / cLen
         for (let i = 0; i < count; i++) {
+          const th = theta0![i] + omega![i] * t
+          const cosT = Math.cos(th)
+          const sinT = Math.sin(th)
           const i3 = i * 3
-          if (kind[i] === 0) {
-            const angle = theta0[i] + omega[i] * t
-            positions[i3] = orbitR[i] * Math.cos(angle)
-            positions[i3 + 1] = fixedC[i]
-            positions[i3 + 2] = orbitR[i] * Math.sin(angle)
-          } else {
-            const angle =
-              theta0[i] + 0.07 * Math.sin(0.5 * t + omega[i])
-            positions[i3] = orbitR[i] * Math.cos(angle)
-            positions[i3 + 1] = bandY + orbitR[i] * Math.sin(angle)
-            positions[i3 + 2] = fixedC[i]
-          }
+          positions[i3] = radius[i] * cosT
+          positions[i3 + 1] = height![i]
+          positions[i3 + 2] = radius[i] * sinT
+          // prograde velocity direction is (-sin, 0, cos)
+          const beam = Math.max(
+            0.15,
+            Math.min(2.5, 1 + BEAM * (-sinT * cx + cosT * cz))
+          )
+          colors[i3] = baseColors[i3] * beam
+          colors[i3 + 1] = baseColors[i3 + 1] * beam
+          colors[i3 + 2] = baseColors[i3 + 2] * beam
         }
         posAttr.needsUpdate = true
+        colAttr.needsUpdate = true
       }
 
-      const damp = zoom > 1.3 ? 0.3 : 1 // calm the tilt while zoomed in
-      group.rotation.y += (targetRY * damp - group.rotation.y) * 0.04
-      group.rotation.x += (targetRX * damp - group.rotation.x) * 0.04
+      // the lensed image of an axisymmetric disk always faces the observer
+      haloGroup.rotation.y = Math.atan2(camera.position.x, camera.position.z)
+
+      controls.update()
       renderer.render(scene, camera)
     }
     frameId = requestAnimationFrame(animate)
 
     const handleResize = () => {
-      fitCamera()
+      camera.aspect = mount.clientWidth / mount.clientHeight
+      camera.updateProjectionMatrix()
       renderer.setSize(mount.clientWidth, mount.clientHeight)
     }
     window.addEventListener('resize', handleResize)
 
     return () => {
       window.removeEventListener('resize', handleResize)
-      window.removeEventListener('pointermove', onPointerMove)
-      renderer.domElement.removeEventListener('pointerdown', onPointerDown)
-      renderer.domElement.removeEventListener('pointerup', onPointerUp)
-      renderer.domElement.removeEventListener('wheel', onWheel)
       cancelAnimationFrame(frameId)
+      controls.dispose()
       for (const d of disposables) d.dispose()
       renderer.dispose()
       if (mount.contains(renderer.domElement)) {
@@ -315,9 +331,12 @@ export function Gargantua() {
   }, [])
 
   return (
-    <div
-      ref={mountRef}
-      className="fixed inset-0 bg-black opacity-0 transition-opacity duration-[1500ms]"
-    />
+    <>
+      <div
+        ref={mountRef}
+        className="fixed inset-0 bg-black opacity-0 transition-opacity duration-[1500ms]"
+      />
+      <MirrorLoader done={ready} />
+    </>
   )
 }

@@ -4,7 +4,7 @@ import { Gargantua } from 'app/components/gargantua'
 export const metadata = {
   title: 'Accretion',
   description:
-    "NASA's black hole visualization rebuilt as an orbiting particle volume — the inner disk outruns the outer, and the lensed halo swirls.",
+    "A true 3D black hole reconstructed from NASA's visualization — Keplerian orbits, live Doppler beaming, and a lensed halo that follows your eye.",
 }
 
 export default function Page() {
@@ -28,11 +28,11 @@ export default function Page() {
             Accretion
           </h1>
           <p className="text-neutral-300 mb-3">
-            {`NASA's 2019 black hole visualization, rebuilt particle by particle and set in motion. Every point rides a Keplerian orbit — the inner disk visibly outruns the outer — and the glow arcing over and under the shadow is the far side of the disk, gravitationally lensed into view.`}
+            {`A real three-dimensional accretion disk, seeded from NASA's 2019 visualization: its radial colors are measured off the image, then 140,000 particles ride true Keplerian orbits — the inner disk outruns the outer. Doppler beaming is computed live, so the side rushing toward you always glows brighter, and the halo over the shadow is the disk's far side, lensed — its image follows your eye as you orbit, just as it would around a real black hole.`}
           </p>
           <p className="font-readout text-neutral-400">
-            drag to pan · scroll to zoom · move your cursor — imagery: NASA
-            GSFC / Jeremy Schnittman, 2019
+            drag to orbit · scroll to approach — imagery: NASA GSFC / Jeremy
+            Schnittman, 2019
           </p>
         </div>
       </div>
