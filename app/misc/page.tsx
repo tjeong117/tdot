@@ -22,8 +22,8 @@ export default function Page() {
     // unreadable over the nebula, so this page brings its own links.
     <div className="fixed inset-0 z-30 overflow-y-auto bg-black text-white">
       <Pillars />
-      <div className="relative z-10 mx-auto max-w-xl px-6 pt-10 pb-16">
-        <nav className="mb-16 flex flex-row space-x-4 text-neutral-300 [text-shadow:0_1px_3px_rgba(0,0,0,0.9)]">
+      <div className="pointer-events-none relative z-10 mx-auto max-w-xl px-6 pt-10 pb-16">
+        <nav className="pointer-events-auto mb-16 flex flex-row space-x-4 text-neutral-300 [text-shadow:0_1px_3px_rgba(0,0,0,0.9)]">
           <Link href="/" className="eh-hover-bright">
             home
           </Link>
@@ -37,7 +37,7 @@ export default function Page() {
             sky
           </Link>
         </nav>
-        <div className="rounded-2xl border border-white/10 bg-black/45 p-6 backdrop-blur-sm">
+        <div className="pointer-events-auto rounded-2xl border border-white/10 bg-black/45 p-6 backdrop-blur-sm">
           <h1 className="ring-rule font-semibold text-2xl mb-6 tracking-tighter">
             Miscellaneous
           </h1>
@@ -51,6 +51,16 @@ export default function Page() {
               </p>
               <p className="tracking-tight text-neutral-100">
                 Constellation Atlas — the sky, drawn by the gods&apos; hands
+              </p>
+            </div>
+          </Link>
+          <Link className="flex flex-col space-y-1 mb-4" href="/blackhole">
+            <div className="w-full flex flex-col md:flex-row md:items-baseline space-x-0 md:space-x-2">
+              <p className="font-readout w-[110px] shrink-0 whitespace-nowrap text-neutral-400">
+                interactive
+              </p>
+              <p className="tracking-tight text-neutral-100">
+                Accretion — NASA&apos;s black hole, set in motion
               </p>
             </div>
           </Link>
@@ -74,7 +84,8 @@ export default function Page() {
         <p className="font-readout mt-10 text-neutral-400 [text-shadow:0_1px_3px_rgba(0,0,0,0.95),0_0_12px_rgba(0,0,0,0.8)]">
           background — pillars of creation, eagle nebula (M16). NASA / ESA /
           CSA / STScI, JWST NIRCam 2022, rebuilt as ~100k particles with depth
-          extruded from luminance. move your cursor.
+          extruded from luminance. drag to pan · scroll to zoom · move your
+          cursor.
         </p>
       </div>
     </div>

@@ -3,17 +3,18 @@
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 
-/* Pillars of Creation (Eagle Nebula, M16) — NASA / ESA / CSA / STScI, JWST
-   NIRCam 2022 (public NASA imagery). Reconstructed as a particle volume:
-   every sufficiently bright pixel becomes a particle, with depth extruded
-   from luminance plus noise, so the nebula gains real parallax under the
-   camera's drift and the pointer's tilt. */
+/* NASA's 2019 black hole visualization (Jeremy Schnittman, NASA GSFC —
+   public NASA imagery), rebuilt with the same technique as the Pillars:
+   every bright pixel becomes a particle with depth extruded from luminance.
+   Then it's set in motion — each particle is placed on a circular Keplerian
+   orbit around the vertical axis through the shadow, with angular speed
+   falling off as r^-1.5, so the inner disk visibly outruns the outer disk
+   and the lensed halo swirls like a crown. */
 
-const IMG_PORTRAIT = '/misc/pillars.jpg'
-const IMG_LANDSCAPE = '/misc/pillars-wide.jpg' // 16:9 crop for laptop screens
-const W = 160 // world width of the reconstruction
+const IMG_URL = '/misc/blackhole-src.jpg'
+const W = 170 // world width of the reconstruction
 
-export function Pillars() {
+export function Gargantua() {
   const mountRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
@@ -37,7 +38,7 @@ export function Pillars() {
 
     const disposables: { dispose: () => void }[] = []
     let frameId = 0
-    let imageH = W * 1.7 // corrected once the image loads
+    let imageH = (W * 9) / 16
 
     // free exploration: wheel zooms, drag pans, hover tilts
     let coverZ = 100
@@ -61,8 +62,6 @@ export function Pillars() {
       const aspect = mount.clientWidth / mount.clientHeight
       camera.aspect = aspect
       const tan = Math.tan((camera.fov * Math.PI) / 360)
-      // the source image matches the screen's orientation, so cover the
-      // view, with margin so pointer tilt doesn't reveal the edges
       const zh = imageH / 2 / tan
       const zw = W / 2 / (tan * aspect)
       coverZ = Math.min(zh, zw) * 0.88
@@ -71,7 +70,6 @@ export function Pillars() {
     }
     fitCamera()
 
-    // soft sprite
     const spriteCanvas = document.createElement('canvas')
     spriteCanvas.width = spriteCanvas.height = 64
     const sctx = spriteCanvas.getContext('2d')!
@@ -86,9 +84,24 @@ export function Pillars() {
 
     const gauss = () => Math.random() + Math.random() - 1
 
+    // orbit state, filled once the image is sampled.
+    // kind 0 = disk band: revolves in x-z around the vertical axis, sweeping
+    //   the edge-on band into a true volumetric disk.
+    // kind 1 = lensed halo: rotates in the image plane around the shadow, so
+    //   the arcs slide along themselves and keep their shape.
+    let positions: Float32Array | null = null
+    let posAttr: THREE.BufferAttribute | null = null
+    let kind: Uint8Array | null = null
+    let orbitR: Float32Array | null = null
+    let fixedC: Float32Array | null = null
+    let theta0: Float32Array | null = null
+    let omega: Float32Array | null = null
+    let bandY = 0
+    let count = 0
+
     const buildParticles = (img: HTMLImageElement) => {
-      const landscape = mount.clientWidth > mount.clientHeight
-      const sampleW = landscape ? 640 : 200
+      const isSmall = window.innerWidth < 768
+      const sampleW = isSmall ? 320 : 640
       const sampleH = Math.round((sampleW * img.height) / img.width)
       imageH = (W * img.height) / img.width
       fitCamera()
@@ -100,15 +113,33 @@ export function Pillars() {
       ctx.drawImage(img, 0, 0, sampleW, sampleH)
       const data = ctx.getImageData(0, 0, sampleW, sampleH).data
 
-      const positions: number[] = []
-      const colors: number[] = []
       const H = imageH
-      // additive blending over ~4-6 overlapping soft sprites per pixel:
-      // scale each particle's color down to conserve the image's exposure.
-      // the landscape framing sits closer, spreading light over more screen
-      // pixels, so it needs a hotter exposure
-      const exposure = landscape ? 0.9 : 0.62
-      const saturation = landscape ? 1.45 : 1.35
+      // the disk band = the brightest pixel row; halo = everything else
+      let bandRow = 0
+      let bandBest = -1
+      for (let v = 0; v < sampleH; v++) {
+        let sum = 0
+        for (let u = 0; u < sampleW; u++) {
+          const i = (v * sampleW + u) * 4
+          sum += data[i] + data[i + 1] + data[i + 2]
+        }
+        if (sum > bandBest) {
+          bandBest = sum
+          bandRow = v
+        }
+      }
+      bandY = -(bandRow / sampleH - 0.5) * H
+      const bandHalf = H * 0.055
+
+      const pos: number[] = []
+      const col: number[] = []
+      const kd: number[] = []
+      const oR: number[] = []
+      const fx: number[] = []
+      const th: number[] = []
+      const om: number[] = []
+      const exposure = 0.6
+      const saturation = 1.2
       for (let v = 0; v < sampleH; v++) {
         for (let u = 0; u < sampleW; u++) {
           const i = (v * sampleW + u) * 4
@@ -116,13 +147,29 @@ export function Pillars() {
           const g = data[i + 1] / 255
           const b = data[i + 2] / 255
           const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b
-          if (lum < 0.045) continue
-          const x = (u / sampleW - 0.5) * W + gauss() * 0.2
-          const y = -(v / sampleH - 0.5) * H + gauss() * 0.2
-          const z =
-            Math.pow(lum, 1.3) * 46 + gauss() * (3 + 11 * lum) - 18
-          positions.push(x, y, z)
-          colors.push(
+          if (lum < 0.03) continue
+          const x = (u / sampleW - 0.5) * W + gauss() * 0.15
+          const y = -(v / sampleH - 0.5) * H + gauss() * 0.15
+          const z = Math.pow(lum, 1.3) * 14 + gauss() * (1.2 + 5 * lum) - 6
+          if (Math.abs(y - bandY) < bandHalf) {
+            // disk band: slow Keplerian revolution about the vertical axis
+            const radius = Math.hypot(x, z)
+            kd.push(0)
+            oR.push(radius)
+            fx.push(y)
+            th.push(Math.atan2(z, x))
+            om.push(Math.min(0.4, 25 / Math.pow(Math.max(radius, 8), 1.5)))
+          } else {
+            // lensed halo: slide along the ring in the image plane
+            const rho = Math.hypot(x, y - bandY)
+            kd.push(1)
+            oR.push(rho)
+            fx.push(z)
+            th.push(Math.atan2(y - bandY, x))
+            om.push(Math.min(0.3, 16 / Math.pow(Math.max(rho, 8), 1.5)))
+          }
+          pos.push(x, y, z)
+          col.push(
             Math.max(0, lum + (r - lum) * saturation) * exposure,
             Math.max(0, lum + (g - lum) * saturation) * exposure,
             Math.max(0, lum + (b - lum) * saturation) * exposure
@@ -130,17 +177,20 @@ export function Pillars() {
         }
       }
 
+      count = oR.length
+      positions = new Float32Array(pos)
+      kind = new Uint8Array(kd)
+      orbitR = new Float32Array(oR)
+      fixedC = new Float32Array(fx)
+      theta0 = new Float32Array(th)
+      omega = new Float32Array(om)
+
       const geometry = new THREE.BufferGeometry()
-      geometry.setAttribute(
-        'position',
-        new THREE.Float32BufferAttribute(positions, 3)
-      )
-      geometry.setAttribute(
-        'color',
-        new THREE.Float32BufferAttribute(colors, 3)
-      )
+      posAttr = new THREE.BufferAttribute(positions, 3)
+      geometry.setAttribute('position', posAttr)
+      geometry.setAttribute('color', new THREE.Float32BufferAttribute(col, 3))
       const material = new THREE.PointsMaterial({
-        size: (W / sampleW) * 2.1,
+        size: (W / sampleW) * 2.3,
         map: spriteTexture,
         vertexColors: true,
         transparent: true,
@@ -154,11 +204,9 @@ export function Pillars() {
     }
 
     const img = new Image()
-    img.src =
-      mount.clientWidth > mount.clientHeight ? IMG_LANDSCAPE : IMG_PORTRAIT
+    img.src = IMG_URL
     img.onload = () => buildParticles(img)
 
-    // pointer tilt + slow sway; drag pans, wheel zooms
     let targetRX = 0
     let targetRY = 0
     let dragging = false
@@ -181,8 +229,8 @@ export function Pillars() {
         applyView()
         return
       }
-      targetRY = (e.clientX / window.innerWidth - 0.5) * 0.42
-      targetRX = (e.clientY / window.innerHeight - 0.5) * 0.24
+      targetRY = (e.clientX / window.innerWidth - 0.5) * 0.5
+      targetRX = (e.clientY / window.innerHeight - 0.5) * 0.3
     }
     const onPointerDown = (e: PointerEvent) => {
       dragging = true
@@ -212,10 +260,27 @@ export function Pillars() {
       frameId = requestAnimationFrame(animate)
       const dt = (now - last) / 1000
       last = now
-      t += dt
-      const sway = prefersReducedMotion ? 0 : Math.sin(t * 0.1) * 0.06
+      if (!prefersReducedMotion) t += dt
+
+      if (positions && posAttr && kind && orbitR && fixedC && theta0 && omega) {
+        for (let i = 0; i < count; i++) {
+          const angle = theta0[i] + omega[i] * t
+          const i3 = i * 3
+          if (kind[i] === 0) {
+            positions[i3] = orbitR[i] * Math.cos(angle)
+            positions[i3 + 1] = fixedC[i]
+            positions[i3 + 2] = orbitR[i] * Math.sin(angle)
+          } else {
+            positions[i3] = orbitR[i] * Math.cos(angle)
+            positions[i3 + 1] = bandY + orbitR[i] * Math.sin(angle)
+            positions[i3 + 2] = fixedC[i]
+          }
+        }
+        posAttr.needsUpdate = true
+      }
+
       const damp = zoom > 1.3 ? 0.3 : 1 // calm the tilt while zoomed in
-      group.rotation.y += ((targetRY + sway) * damp - group.rotation.y) * 0.04
+      group.rotation.y += (targetRY * damp - group.rotation.y) * 0.04
       group.rotation.x += (targetRX * damp - group.rotation.x) * 0.04
       renderer.render(scene, camera)
     }
