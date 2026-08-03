@@ -5,16 +5,30 @@ import { ParticleImage } from './particle-image'
 
 /* Home scrollytelling: the right rail snaps one card per scroll gesture;
    when the active card changes, the left panel crossfades to that card's
-   nebula at full reconstruction quality. The panel is fully interactive —
+   nebula at full reconstruction quality and the section index under the
+   wordmark lights up the card you're on. The panel is fully interactive —
    drag to pan, wheel to zoom, hover to tilt. */
 
 export type Scene = {
   key: string // scenes with the same key don't retrigger a crossfade
   src: string | null // null = the theme starfield (the sky card)
-  caption: string
+  label: string // section name; runs of the same label share one index entry
 }
 
 type Layer = { id: number; scene: Scene }
+
+type Section = { label: string; start: number; end: number }
+
+// collapse runs of same-labelled cards into one index entry each
+function sectionsOf(scenes: Scene[]): Section[] {
+  const out: Section[] = []
+  scenes.forEach((scene, i) => {
+    const last = out[out.length - 1]
+    if (last && last.label === scene.label) last.end = i
+    else out.push({ label: scene.label, start: i, end: i })
+  })
+  return out
+}
 
 const STAR_TILE =
   "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cg fill='%23ffffff'%3E%3Ccircle cx='17' cy='36' r='0.9' opacity='.6'/%3E%3Ccircle cx='63' cy='11' r='0.7' opacity='.4'/%3E%3Ccircle cx='104' cy='58' r='1' opacity='.5'/%3E%3Ccircle cx='151' cy='24' r='0.6' opacity='.35'/%3E%3Ccircle cx='196' cy='73' r='0.8' opacity='.45'/%3E%3Ccircle cx='38' cy='104' r='0.7' opacity='.4'/%3E%3Ccircle cx='87' cy='139' r='0.9' opacity='.55'/%3E%3Ccircle cx='139' cy='112' r='0.6' opacity='.3'/%3E%3Ccircle cx='183' cy='151' r='1' opacity='.5'/%3E%3Ccircle cx='226' cy='118' r='0.6' opacity='.3'/%3E%3Ccircle cx='22' cy='176' r='0.8' opacity='.42'/%3E%3Ccircle cx='68' cy='212' r='0.6' opacity='.32'/%3E%3Ccircle cx='121' cy='188' r='0.9' opacity='.5'/%3E%3Ccircle cx='171' cy='226' r='0.7' opacity='.36'/%3E%3Ccircle cx='213' cy='196' r='0.6' opacity='.3'/%3E%3C/g%3E%3Cg fill='%23ffc46b'%3E%3Ccircle cx='132' cy='16' r='0.8' opacity='.45'/%3E%3Ccircle cx='51' cy='158' r='0.7' opacity='.4'/%3E%3C/g%3E%3C/svg%3E\")"
@@ -34,6 +48,17 @@ export function HomeShell({
   const nextId = useRef(1)
   const currentKey = useRef(scenes[0]?.key)
   const switchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const sections = sectionsOf(scenes)
+  const activeSection = sections.findIndex(
+    (s) => active >= s.start && active <= s.end
+  )
+
+  const scrollToCard = (index: number) => {
+    railRef.current
+      ?.querySelectorAll('[data-card]')
+      [index]?.closest('section')
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   // warm the browser cache so crossfades never wait on the network
   useEffect(() => {
@@ -119,12 +144,28 @@ export function HomeShell({
           <h1 className="text-3xl font-semibold tracking-tighter md:text-4xl">
             Tom Jeong
           </h1>
+          {/* narrow screens: just the section you're on, where the caption was */}
           <p
-            key={active}
-            className="caption-fade font-readout mt-2 text-neutral-400"
+            key={activeSection}
+            className="caption-fade font-readout mt-2 text-neutral-300 md:hidden"
           >
-            {scenes[active]?.caption}
+            {sections[activeSection]?.label}
           </p>
+          <nav className="font-readout pointer-events-auto mt-3 hidden flex-col items-start gap-1 md:flex">
+            {sections.map((section, i) => (
+              <button
+                key={section.label}
+                type="button"
+                aria-current={i === activeSection}
+                onClick={() => scrollToCard(section.start)}
+                className={`section-link cursor-pointer${
+                  i === activeSection ? ' section-link-active' : ''
+                }`}
+              >
+                {section.label}
+              </button>
+            ))}
+          </nav>
         </div>
       </div>
       <div
@@ -138,15 +179,10 @@ export function HomeShell({
           <button
             key={i}
             type="button"
-            aria-label={`section ${i + 1} of ${scenes.length}`}
+            aria-label={`${scene.label} — card ${i + 1} of ${scenes.length}`}
             aria-current={i === active}
             className="cursor-pointer py-[3px] pl-3"
-            onClick={() => {
-              const card = railRef.current?.querySelectorAll('[data-card]')[i]
-              card
-                ?.closest('section')
-                ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-            }}
+            onClick={() => scrollToCard(i)}
           >
             <span
               className={`rail-tick${i === active ? ' rail-tick-active' : ''}`}

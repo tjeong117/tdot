@@ -17,8 +17,6 @@ function Card({ children }: { children: React.ReactNode }) {
   )
 }
 
-const BUTTERFLY_CAPTION = 'butterfly nebula · NGC 6302 — hubble, 2009'
-
 export default function Page() {
   const posts = getBlogPosts().sort(
     (a, b) =>
@@ -27,28 +25,19 @@ export default function Page() {
   )
 
   const artifacts = Object.entries(ARTIFACTS)
-  // one scene per card, in card order: the left panel morphs to match
+  // one scene per card, in card order: the left panel morphs to match.
+  // consecutive scenes sharing a label collapse into one entry in the index.
   const scenes: Scene[] = [
-    { key: 'butterfly', src: '/misc/butterfly.jpg', caption: BUTTERFLY_CAPTION },
+    { key: 'butterfly', src: '/misc/butterfly.jpg', label: 'about' },
     ...artifacts.map(([slug, a]) => ({
       key: slug,
       src: typeof a.options.src === 'string' ? a.options.src : a.options.src.landscape,
-      caption: `${a.title.toLowerCase()} · ${
-        a.credit.split('—')[1]?.trim().toLowerCase() ?? 'nasa'
-      }`,
+      label: 'nebulae',
     })),
-    {
-      key: 'accretion',
-      src: '/misc/blackhole-src.jpg',
-      caption: 'accretion · nasa gsfc visualization, 2019',
-    },
-    {
-      key: 'sky',
-      src: null,
-      caption: 'milky way × andromeda · the next six billion years',
-    },
-    { key: 'sky', src: null, caption: 'the night sky · 2,061 stars, hyg catalog' },
-    { key: 'butterfly', src: '/misc/butterfly.jpg', caption: BUTTERFLY_CAPTION },
+    { key: 'accretion', src: '/misc/blackhole-src.jpg', label: 'black hole' },
+    { key: 'sky', src: null, label: 'collision' },
+    { key: 'sky', src: null, label: 'constellations' },
+    { key: 'butterfly', src: '/misc/butterfly.jpg', label: 'research' },
   ]
 
   return (
@@ -76,10 +65,7 @@ export default function Page() {
           </a>
           {`), and before that I studied CS and Mathematics at Georgia Tech.`}
         </p>
-        <p className="mb-6 text-neutral-300">
-          {`This site doubles as a small planetarium — every image here is a real NASA/ESA observation rebuilt as an interactive particle volume. Scroll, and the nebula on the left rearranges itself into the next one.`}
-        </p>
-        <nav className="flex flex-wrap gap-x-5 gap-y-2 text-neutral-200">
+        <nav className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-neutral-200">
           <Link href="/blog" className="eh-hover-bright">
             blog
           </Link>

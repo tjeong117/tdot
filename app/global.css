@@ -122,6 +122,21 @@
   }
 }
 
+/* Section index under the wordmark: the card you're on burns gold */
+.section-link {
+  color: rgba(190, 190, 190, 0.55);
+  transition:
+    color 0.35s ease,
+    opacity 0.35s ease;
+}
+.section-link:hover {
+  color: rgba(255, 255, 255, 0.85);
+}
+.section-link-active,
+.section-link-active:hover {
+  color: #e3b264;
+}
+
 /* Home scroll rail: cards lift and light up as they enter the viewport */
 .home-card {
   opacity: 0.25;
