@@ -32,16 +32,23 @@ export default function Page() {
     ...artifacts.map(([slug, a]) => ({
       key: slug,
       src: typeof a.options.src === 'string' ? a.options.src : a.options.src.landscape,
-      label: 'nebulae',
+      label: 'gallery',
     })),
-    { key: 'accretion', src: '/misc/blackhole-src.jpg', label: 'black hole' },
-    { key: 'sky', src: null, label: 'collision' },
-    { key: 'sky', src: null, label: 'constellations' },
+    { key: 'accretion', src: '/misc/blackhole-src.jpg', label: 'gallery' },
+    { key: 'sky', src: null, label: 'gallery' },
+    { key: 'sky', src: null, label: 'gallery' },
     { key: 'butterfly', src: '/misc/butterfly.jpg', label: 'research' },
   ]
 
+  // index entries that leave the scroll: pages first, then socials as one row
+  const links = [{ label: 'blog', href: '/blog' }]
+  const socials = [
+    { label: 'github', href: 'https://github.com/tjeong117' },
+    { label: 'linkedin', href: 'https://www.linkedin.com/in/tomwsjeong' },
+  ]
+
   return (
-    <HomeShell scenes={scenes}>
+    <HomeShell scenes={scenes} links={links} socials={socials}>
       <Card>
         <p className="font-readout mb-4 text-neutral-500">hello</p>
         <p className="mb-4 text-neutral-200">

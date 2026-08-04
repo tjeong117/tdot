@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { ParticleImage } from './particle-image'
 
@@ -16,6 +17,8 @@ export type Scene = {
 }
 
 type Layer = { id: number; scene: Scene }
+
+export type IndexLink = { label: string; href: string }
 
 type Section = { label: string; start: number; end: number }
 
@@ -35,9 +38,13 @@ const STAR_TILE =
 
 export function HomeShell({
   scenes,
+  links = [],
+  socials = [],
   children,
 }: {
   scenes: Scene[]
+  links?: IndexLink[]
+  socials?: IndexLink[]
   children: React.ReactNode
 }) {
   const railRef = useRef<HTMLDivElement | null>(null)
@@ -165,6 +172,26 @@ export function HomeShell({
                 {section.label}
               </button>
             ))}
+            {links.map((link) => (
+              <Link key={link.label} href={link.href} className="section-link">
+                {link.label}
+              </Link>
+            ))}
+            {socials.length > 0 && (
+              <span className="mt-1 flex items-center gap-3">
+                {socials.map((social) => (
+                  <a
+                    key={social.label}
+                    href={social.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="section-link"
+                  >
+                    {social.label}
+                  </a>
+                ))}
+              </span>
+            )}
           </nav>
         </div>
       </div>
