@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { HomeShell, type Scene } from 'app/components/home-shell'
+import { HomeShell, type IndexEntry, type Scene } from 'app/components/home-shell'
 import { ARTIFACTS } from 'app/nebula/[slug]/page'
 import { formatDate, getBlogPosts } from 'app/blog/utils'
 import { papers, formatPaperDate } from 'app/research/page'
@@ -26,29 +26,37 @@ export default function Page() {
 
   const artifacts = Object.entries(ARTIFACTS)
   // one scene per card, in card order: the left panel morphs to match.
-  // consecutive scenes sharing a label collapse into one entry in the index.
+  // the written cards come first on one steady backdrop; the images run last.
   const scenes: Scene[] = [
     { key: 'butterfly', src: '/misc/butterfly.jpg', label: 'about' },
+    { key: 'butterfly', src: '/misc/butterfly.jpg', label: 'research' },
+    { key: 'butterfly', src: '/misc/butterfly.jpg', label: 'blogs' },
     ...artifacts.map(([slug, a]) => ({
       key: slug,
       src: typeof a.options.src === 'string' ? a.options.src : a.options.src.landscape,
-      label: 'gallery',
+      label: 'images',
     })),
-    { key: 'accretion', src: '/misc/blackhole-src.jpg', label: 'gallery' },
-    { key: 'sky', src: null, label: 'gallery' },
-    { key: 'sky', src: null, label: 'gallery' },
-    { key: 'butterfly', src: '/misc/butterfly.jpg', label: 'research' },
+    { key: 'accretion', src: '/misc/blackhole-src.jpg', label: 'images' },
+    { key: 'sky', src: null, label: 'images' },
+    { key: 'sky', src: null, label: 'images' },
   ]
 
-  // index entries that leave the scroll: pages first, then socials as one row
-  const links = [{ label: 'blog', href: '/blog' }]
-  const socials = [
-    { label: 'github', href: 'https://github.com/tjeong117' },
-    { label: 'linkedin', href: 'https://www.linkedin.com/in/tomwsjeong' },
+  // the index, in its own order: destinations first, the image tour last
+  const index: IndexEntry[] = [
+    { label: 'about', section: 'about' },
+    { label: 'research', section: 'research' },
+    { label: 'blogs', section: 'blogs' },
+    {
+      socials: [
+        { label: 'github', href: 'https://github.com/tjeong117' },
+        { label: 'linkedin', href: 'https://www.linkedin.com/in/tomwsjeong' },
+      ],
+    },
+    { label: 'images', section: 'images' },
   ]
 
   return (
-    <HomeShell scenes={scenes} links={links} socials={socials}>
+    <HomeShell scenes={scenes} index={index}>
       <Card>
         <p className="font-readout mb-4 text-neutral-500">hello</p>
         <p className="mb-4 text-neutral-200">
@@ -105,6 +113,60 @@ export default function Page() {
         <p className="font-readout mt-6 text-neutral-500">scroll ↓</p>
       </Card>
 
+      <Card>
+        <h2 className="ring-rule mb-4 text-xl font-semibold tracking-tighter">
+          Research
+        </h2>
+        {papers.map((paper) => (
+          <Link
+            key={paper.slug}
+            href={`/research/${paper.slug}`}
+            className="mb-3 block"
+          >
+            <p className="font-readout text-neutral-400">
+              {formatPaperDate(paper.date)}
+            </p>
+            <p className="text-neutral-100">{paper.title}</p>
+          </Link>
+        ))}
+      </Card>
+
+      <Card>
+        <h2 className="ring-rule mb-4 text-xl font-semibold tracking-tighter">
+          Blog
+        </h2>
+        {posts.map((post) => (
+          <Link
+            key={post.slug}
+            href={`/blog/${post.slug}`}
+            className="mb-3 block"
+          >
+            <p className="font-readout text-neutral-400">
+              {formatDate(post.metadata.publishedAt, false)}
+            </p>
+            <p className="text-neutral-100">{post.metadata.title}</p>
+          </Link>
+        ))}
+        <div className="mt-8 flex gap-5 text-neutral-400">
+          <a
+            href="https://github.com/tjeong117"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="eh-hover-bright"
+          >
+            github
+          </a>
+          <a
+            href="https://linkedin.com/in/tomwsjeong"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="eh-hover-bright"
+          >
+            linkedin
+          </a>
+        </div>
+      </Card>
+
       {artifacts.map(([slug, artifact]) => (
         <Card key={slug}>
           <Link href={`/nebula/${slug}`} className="group block">
@@ -159,61 +221,11 @@ export default function Page() {
             drag to pan the sky →
           </p>
         </Link>
-      </Card>
-
-      <Card>
-        <h2 className="ring-rule mb-4 text-xl font-semibold tracking-tighter">
-          Research
-        </h2>
-        {papers.map((paper) => (
-          <Link
-            key={paper.slug}
-            href={`/research/${paper.slug}`}
-            className="mb-3 block"
-          >
-            <p className="font-readout text-neutral-400">
-              {formatPaperDate(paper.date)}
-            </p>
-            <p className="text-neutral-100">{paper.title}</p>
-          </Link>
-        ))}
-        <h2 className="ring-rule mb-4 mt-8 text-xl font-semibold tracking-tighter">
-          Blog
-        </h2>
-        {posts.map((post) => (
-          <Link
-            key={post.slug}
-            href={`/blog/${post.slug}`}
-            className="mb-3 block"
-          >
-            <p className="font-readout text-neutral-400">
-              {formatDate(post.metadata.publishedAt, false)}
-            </p>
-            <p className="text-neutral-100">{post.metadata.title}</p>
-          </Link>
-        ))}
-        <div className="mt-8 flex gap-5 text-neutral-400">
-          <a
-            href="https://github.com/tjeong117"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="eh-hover-bright"
-          >
-            github
-          </a>
-          <a
-            href="https://linkedin.com/in/tomwsjeong"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="eh-hover-bright"
-          >
-            linkedin
-          </a>
-        </div>
-        <p className="font-readout mt-4 text-neutral-500">
+        <p className="font-readout mt-8 text-neutral-500">
           © {new Date().getFullYear()} tom jeong
         </p>
       </Card>
+
     </HomeShell>
   )
 }

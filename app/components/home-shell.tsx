@@ -20,31 +20,25 @@ type Layer = { id: number; scene: Scene }
 
 export type IndexLink = { label: string; href: string }
 
-type Section = { label: string; start: number; end: number }
-
-// collapse runs of same-labelled cards into one index entry each
-function sectionsOf(scenes: Scene[]): Section[] {
-  const out: Section[] = []
-  scenes.forEach((scene, i) => {
-    const last = out[out.length - 1]
-    if (last && last.label === scene.label) last.end = i
-    else out.push({ label: scene.label, start: i, end: i })
-  })
-  return out
-}
+/* An index entry either jumps to the first card carrying a scene label — and
+   lights up while you're inside that run — or leaves the page. The index sets
+   its own order, so the socials can sit above the image tour that trails the
+   scroll. */
+export type IndexEntry =
+  | { label: string; section: string }
+  | { label: string; href: string }
+  | { socials: IndexLink[] }
 
 const STAR_TILE =
   "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cg fill='%23ffffff'%3E%3Ccircle cx='17' cy='36' r='0.9' opacity='.6'/%3E%3Ccircle cx='63' cy='11' r='0.7' opacity='.4'/%3E%3Ccircle cx='104' cy='58' r='1' opacity='.5'/%3E%3Ccircle cx='151' cy='24' r='0.6' opacity='.35'/%3E%3Ccircle cx='196' cy='73' r='0.8' opacity='.45'/%3E%3Ccircle cx='38' cy='104' r='0.7' opacity='.4'/%3E%3Ccircle cx='87' cy='139' r='0.9' opacity='.55'/%3E%3Ccircle cx='139' cy='112' r='0.6' opacity='.3'/%3E%3Ccircle cx='183' cy='151' r='1' opacity='.5'/%3E%3Ccircle cx='226' cy='118' r='0.6' opacity='.3'/%3E%3Ccircle cx='22' cy='176' r='0.8' opacity='.42'/%3E%3Ccircle cx='68' cy='212' r='0.6' opacity='.32'/%3E%3Ccircle cx='121' cy='188' r='0.9' opacity='.5'/%3E%3Ccircle cx='171' cy='226' r='0.7' opacity='.36'/%3E%3Ccircle cx='213' cy='196' r='0.6' opacity='.3'/%3E%3C/g%3E%3Cg fill='%23ffc46b'%3E%3Ccircle cx='132' cy='16' r='0.8' opacity='.45'/%3E%3Ccircle cx='51' cy='158' r='0.7' opacity='.4'/%3E%3C/g%3E%3C/svg%3E\")"
 
 export function HomeShell({
   scenes,
-  links = [],
-  socials = [],
+  index = [],
   children,
 }: {
   scenes: Scene[]
-  links?: IndexLink[]
-  socials?: IndexLink[]
+  index?: IndexEntry[]
   children: React.ReactNode
 }) {
   const railRef = useRef<HTMLDivElement | null>(null)
@@ -55,15 +49,12 @@ export function HomeShell({
   const nextId = useRef(1)
   const currentKey = useRef(scenes[0]?.key)
   const switchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const sections = sectionsOf(scenes)
-  const activeSection = sections.findIndex(
-    (s) => active >= s.start && active <= s.end
-  )
+  const activeLabel = scenes[active]?.label
 
-  const scrollToCard = (index: number) => {
+  const scrollToCard = (card: number) => {
     railRef.current
       ?.querySelectorAll('[data-card]')
-      [index]?.closest('section')
+      [card]?.closest('section')
       ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
@@ -153,45 +144,60 @@ export function HomeShell({
           </h1>
           {/* narrow screens: just the section you're on, where the caption was */}
           <p
-            key={activeSection}
+            key={activeLabel}
             className="caption-fade font-readout mt-2 text-neutral-300 md:hidden"
           >
-            {sections[activeSection]?.label}
+            {activeLabel}
           </p>
           <nav className="font-readout pointer-events-auto mt-3 hidden flex-col items-start gap-1 md:flex">
-            {sections.map((section, i) => (
-              <button
-                key={section.label}
-                type="button"
-                aria-current={i === activeSection}
-                onClick={() => scrollToCard(section.start)}
-                className={`section-link cursor-pointer${
-                  i === activeSection ? ' section-link-active' : ''
-                }`}
-              >
-                {section.label}
-              </button>
-            ))}
-            {links.map((link) => (
-              <Link key={link.label} href={link.href} className="section-link">
-                {link.label}
-              </Link>
-            ))}
-            {socials.length > 0 && (
-              <span className="mt-1 flex items-center gap-3">
-                {socials.map((social) => (
-                  <a
-                    key={social.label}
-                    href={social.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
+            {index.map((entry) => {
+              if ('socials' in entry) {
+                return (
+                  <span
+                    key="socials"
+                    className="mt-1 flex items-center gap-3"
+                  >
+                    {entry.socials.map((social) => (
+                      <a
+                        key={social.label}
+                        href={social.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="section-link"
+                      >
+                        {social.label}
+                      </a>
+                    ))}
+                  </span>
+                )
+              }
+              if ('href' in entry) {
+                return (
+                  <Link
+                    key={entry.label}
+                    href={entry.href}
                     className="section-link"
                   >
-                    {social.label}
-                  </a>
-                ))}
-              </span>
-            )}
+                    {entry.label}
+                  </Link>
+                )
+              }
+              const card = scenes.findIndex((s) => s.label === entry.section)
+              const isActive = activeLabel === entry.section
+              return (
+                <button
+                  key={entry.label}
+                  type="button"
+                  aria-current={isActive}
+                  onClick={() => scrollToCard(Math.max(card, 0))}
+                  className={`section-link cursor-pointer${
+                    isActive ? ' section-link-active' : ''
+                  }`}
+                >
+                  {entry.label}
+                </button>
+              )
+            })}
           </nav>
         </div>
       </div>
