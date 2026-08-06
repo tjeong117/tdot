@@ -3,6 +3,7 @@ import Image from 'next/image'
 import { MDXRemote } from 'next-mdx-remote/rsc'
 import { highlight } from 'sugar-high'
 import React from 'react'
+import { WaveDispersion } from './wave-dispersion'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
@@ -100,6 +101,7 @@ let components = {
   a: CustomLink,
   code: Code,
   Table,
+  WaveDispersion,
 }
 
 export function CustomMDX(props) {

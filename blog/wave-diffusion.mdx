@@ -1,0 +1,201 @@
+---
+title: 'A language model made of waves'
+publishedAt: '2026-06-15'
+summary: 'A 548M masked diffusion LM with no attention: tokens are unit phasors, noising is phase decoherence, and the mixer is a split-step Schrödinger integrator. The clean result is that the physics-native readout was the thing holding it back.'
+tag: 'research'
+---
+
+I trained a 548M-parameter masked diffusion language model in which the three places a discrete model touches its tokens are all replaced by wave mechanics. Tokens are unit-magnitude wave packets. Forward diffusion is phase decoherence. The sequence mixer is an attention-free split-step integrator of a Schrödinger equation. Everything else (the MDLM objective, the sampler, the evaluation protocol) is standard, so anything that differs from a transformer baseline is attributable to the substrate rather than to the training setup.
+
+The weights are on [Hugging Face](https://huggingface.co/tjeongggg/wave-diffusion-548m), with an interactive demo that visualises the wavefield as it denoises.
+
+It writes fluent, on-topic English. It is not a knowledge oracle; it rambles and it is not factually reliable. The interesting part is not the samples, it is a negative result about the piece of the model I was least willing to give up.
+
+## Tokens as phasors
+
+Every vocabulary item $v$ owns a learned phase vector $\Phi[v] \in \mathbb{R}^m$, initialised uniform on $(-\pi, \pi]$. Its clean packet is the unit phasor
+
+$$
+e(v) = \exp\big(i\,\Phi[v]\big) \in \mathbb{C}^m
+$$
+
+so every token has identical componentwise magnitude, $|e(v)_j| = 1$, and identity lives entirely in phase. Magnitude is deliberately left free: it becomes the carrier of corruption.
+
+## Diffusion as decoherence
+
+The forward process jitters phases with a log-linear noise scale $\theta(t) = 0.05 \cdot 120^{\,t}$:
+
+$$
+\psi_t(v) = \exp\big(i(\Phi[v] + \theta(t)\,\omega)\big), \qquad \omega \sim \mathcal{N}(0, I_m)
+$$
+
+Each component stays on the unit circle, but its expectation contracts. The Gaussian characteristic function gives the whole story in one line:
+
+$$
+\mathbb{E}_{\omega}\!\left[e^{i(\phi + \theta\omega_j)}\right] = e^{i\phi}\,\mathbb{E}\!\left[e^{i\theta\omega_j}\right] = e^{i\phi}\,e^{-\theta^{2}/2}
+$$
+
+Phase information is scrambled, and the degree of scrambling is recorded in the expected magnitude, the textbook signature of decoherence. That envelope $e^{-\theta^2/2}$ is what the schedule is really doing:
+
+<figure>
+<svg viewBox="0 0 600 235" width="100%" role="img" aria-label="Coherence e^(-theta squared over 2) against diffusion time t, collapsing sharply near t=0.63">
+  <line x1="60" y1="30" x2="560" y2="30" stroke="#e4e4e4" strokeWidth="1"/>
+  <line x1="60" y1="110" x2="560" y2="110" stroke="#e4e4e4" strokeWidth="1"/>
+  <line x1="60" y1="190" x2="560" y2="190" stroke="#bbb" strokeWidth="1"/>
+  <line x1="60" y1="22" x2="60" y2="190" stroke="#bbb" strokeWidth="1"/>
+  <path d="M 60.0,30.2 L 103.8,30.5 L 145.4,31.0 L 185.0,32.2 L 224.6,34.6 L 260.0,39.0 L 291.2,45.9 L 310.0,52.3 L 328.8,60.9 L 345.4,70.9 L 360.0,81.8 L 373.0,93.1 L 385.0,104.8 L 397.5,118.2 L 410.0,132.2 L 422.5,146.1 L 435.0,159.1 L 447.5,170.2 L 460.0,178.7 L 472.5,184.5 L 485.0,187.8 L 497.5,189.3 L 510.0,189.8 L 522.5,190.0 L 535.0,190.0 L 560.0,190.0" fill="none" stroke="#111" strokeWidth="2"/>
+  <line x1="373" y1="93" x2="373" y2="190" stroke="#888" strokeWidth="1" strokeDasharray="3,3"/>
+  <circle cx="373" cy="93" r="3" fill="#111"/>
+  <text x="380" y="88" fontSize="11" fill="#555">θ = 1</text>
+  <text x="52" y="34" textAnchor="end" fontSize="11" fill="#555">1</text>
+  <text x="52" y="114" textAnchor="end" fontSize="11" fill="#555">0.5</text>
+  <text x="52" y="194" textAnchor="end" fontSize="11" fill="#555">0</text>
+  <text x="60" y="208" textAnchor="middle" fontSize="11" fill="#555">0</text>
+  <text x="373" y="208" textAnchor="middle" fontSize="11" fill="#555">0.63</text>
+  <text x="560" y="208" textAnchor="middle" fontSize="11" fill="#555">1</text>
+  <text x="310" y="226" textAnchor="middle" fontSize="12" fill="#333">diffusion time t</text>
+  <text x="16" y="110" textAnchor="middle" fontSize="12" fill="#333" transform="rotate(-90,16,110)">coherence</text>
+</svg>
+<figcaption>Expected phasor magnitude against diffusion time, plotted from the closed form, with no measurements involved. Coherence sits near 1 for the first two-thirds of the schedule, then falls off a cliff. By $\theta \ge 5.9$ the factor is numerically zero.</figcaption>
+</figure>
+
+This is where the framing earns something. In ordinary discrete diffusion the absorbing `[MASK]` state is a reserved extra symbol with a learned embedding. Here it is not reserved at all: it is the $\theta \to \infty$ limit of a continuous physical corruption, reached along a path of partially coherent states, and the mask embedding is *forced* to be the zero vector rather than learned.
+
+## The mixer
+
+The denoiser sees $L$ corrupted packets and predicts clean ones at every position. Its blocks contain no attention. Each one advances $i\,\partial_t \psi = (K + V)\psi$ by a single first-order Lie–Trotter split step: apply the kinetic factor, then the potential factor, each exactly, eating the usual error in their commutator.
+
+The kinetic step is diagonal in the sequence-frequency domain, which is what makes it cheap:
+
+$$
+\psi \;\leftarrow\; \mathcal{F}^{-1}\!\Big[e^{-i\,\omega_c(k)}\,\mathcal{F}\psi\Big], \qquad \omega_c(k) = a_1 k + a_2 k^2 + a_3 k^3
+$$
+
+with $k = 2\pi\,\mathrm{fftfreq}(L)$ and $(a_1, a_2, a_3)$ learned per complex channel: an advection term, a free-particle term, and an Airy term. Because $|e^{-i\omega_c(k)}| = 1$ this step is *exactly* unitary: an all-pass filter that can translate, spread and skew packets along the sequence but cannot create or destroy signal energy. The potential step is content-dependent, and is where energy is allowed to leave:
+
+$$
+z \;\leftarrow\; z \odot \exp\big(-i\,V_r - \mathrm{softplus}(V_i)\big), \qquad [V_r, V_i] = \mathrm{MLP}([\mathrm{Re}\,z; \mathrm{Im}\,z])
+$$
+
+a unitary rotation by $V_r$ plus a strictly contractive absorbing term, since $\mathrm{softplus}(V_i) > 0$ means magnitudes can only shrink.
+
+Here is the kinetic step, running. This is not a video of a simulation; it is the same three lines the mixer executes, in your browser: FFT along the sequence, multiply by the phase plate $e^{-i\omega_c(k)\,\mathrm{d}t}$, inverse FFT. Hue is phase and brightness is amplitude, so the fringes where the two packets overlap are literal interference, and the white trace is the amplitude the Born readout would see.
+
+<figure>
+  <WaveDispersion />
+  <figcaption>Drag the coefficients. $a_1$ translates a packet without changing its shape. $a_2$ is the free-particle term, so it spreads. $a_3$ skews the packet into the Airy tail. Every setting conserves total energy exactly, because the multiplier has modulus one. The waterfall below the live band is the sequence's history running downward; it reseeds every few seconds so the collision replays.</figcaption>
+</figure>
+
+Watch what the amplitude trace does when the two packets cross: it goes flat and featureless at exactly the moment the hue banding is richest. All of the structure is in phase, and a magnitude-only readout sees none of it. That turns out to be the whole story.
+
+<figure>
+<svg viewBox="0 0 620 250" width="100%" role="img" aria-label="Block diagram: input phasors, twenty-four physics blocks each containing FFT, dispersion, inverse FFT, potential and feed-forward, then a linear readout">
+  <rect x="8" y="96" width="74" height="46" rx="3" fill="none" stroke="#111" strokeWidth="1.2"/>
+  <text x="45" y="115" textAnchor="middle" fontSize="11" fill="#111">ψ(t)</text>
+  <text x="45" y="131" textAnchor="middle" fontSize="10" fill="#666">L × ℂᵐ</text>
+  <line x1="82" y1="119" x2="104" y2="119" stroke="#111" strokeWidth="1"/>
+  <polygon points="104,115 112,119 104,123" fill="#111"/>
+
+  <rect x="112" y="40" width="372" height="158" rx="4" fill="none" stroke="#999" strokeWidth="1" strokeDasharray="4,3"/>
+  <text x="298" y="30" textAnchor="middle" fontSize="11" fill="#666">× 24 blocks</text>
+
+  <rect x="128" y="96" width="60" height="46" rx="3" fill="none" stroke="#111" strokeWidth="1.2"/>
+  <text x="158" y="123" textAnchor="middle" fontSize="11" fill="#111">FFT</text>
+  <line x1="188" y1="119" x2="204" y2="119" stroke="#111" strokeWidth="1"/>
+  <polygon points="204,115 212,119 204,123" fill="#111"/>
+
+  <rect x="212" y="88" width="92" height="62" rx="3" fill="none" stroke="#111" strokeWidth="1.6"/>
+  <text x="258" y="110" textAnchor="middle" fontSize="11" fill="#111">dispersion</text>
+  <text x="258" y="126" textAnchor="middle" fontSize="10" fill="#666">e^(−iω(k))</text>
+  <text x="258" y="141" textAnchor="middle" fontSize="10" fill="#666">unitary</text>
+  <line x1="304" y1="119" x2="320" y2="119" stroke="#111" strokeWidth="1"/>
+  <polygon points="320,115 328,119 320,123" fill="#111"/>
+
+  <rect x="328" y="96" width="60" height="46" rx="3" fill="none" stroke="#111" strokeWidth="1.2"/>
+  <text x="358" y="123" textAnchor="middle" fontSize="11" fill="#111">IFFT</text>
+  <line x1="388" y1="119" x2="404" y2="119" stroke="#111" strokeWidth="1"/>
+  <polygon points="404,115 412,119 404,123" fill="#111"/>
+
+  <rect x="412" y="88" width="60" height="62" rx="3" fill="none" stroke="#111" strokeWidth="1.6"/>
+  <text x="442" y="106" textAnchor="middle" fontSize="11" fill="#111">potential</text>
+  <text x="442" y="122" textAnchor="middle" fontSize="10" fill="#666">rotate +</text>
+  <text x="442" y="136" textAnchor="middle" fontSize="10" fill="#666">absorb</text>
+
+  <line x1="484" y1="119" x2="506" y2="119" stroke="#111" strokeWidth="1"/>
+  <polygon points="506,115 514,119 506,123" fill="#111"/>
+  <rect x="514" y="96" width="82" height="46" rx="3" fill="none" stroke="#111" strokeWidth="1.2"/>
+  <text x="555" y="115" textAnchor="middle" fontSize="11" fill="#111">linear head</text>
+  <text x="555" y="131" textAnchor="middle" fontSize="10" fill="#666">W[Re ψ; Im ψ]</text>
+
+  <text x="298" y="180" textAnchor="middle" fontSize="10" fill="#666">O(L log L) per layer · no attention</text>
+  <text x="298" y="228" textAnchor="middle" fontSize="11" fill="#333">and an FFN after each block, 4× expansion</text>
+</svg>
+<figcaption>One forward pass. Mixing costs $O(L\log L)$ per layer against attention's $O(L^2)$, which puts the model in the family of spectral token mixers, but with a complex state and a dispersion step that is unitary by construction rather than a learned real spectral gate.</figcaption>
+</figure>
+
+## The readout, not the dynamics
+
+The first matched comparisons had the wave model trailing a parameter-matched transformer MDLM by roughly half a bit, and I spent a while assuming the wave dynamics were the problem. They weren't.
+
+The denoiser exposes a complex field $\hat\psi \in \mathbb{C}^m$ per position, and the physics-native way to turn that into token probabilities is the Born rule. Score each token by intensity against its clean packet, $I(v) = |\langle e(v), \hat\psi\rangle|^2$, and take the logit as $\tau\log(I(v)/m + \epsilon) + b_v$. At $\tau = 1$, $b = 0$, $\epsilon \to 0$ the softmax collapses to exactly
+
+$$
+\mathrm{softmax}_v\big(\log I(v)\big) = \frac{I(v)}{\sum_{w} I(w)}
+$$
+
+token probabilities as relative measurement intensities. It is the most satisfying part of the design, and it was costing real bits.
+
+Swapping it for an ordinary linear head on both quadratures, $\ell = W[\mathrm{Re}\,\hat\psi; \mathrm{Im}\,\hat\psi] + b$, with identical wave dynamics and identical training, moves the model ahead of the transformer. But that comparison is capacity-confounded: the full linear head carries $2mV$ parameters where the codebook-tied Born head carries $mV$. So the load-bearing control is a bottleneck linear head, rank $K = 819$, sized to match the Born head exactly:
+
+| readout | params | bits/token |
+|---|---|---|
+| transformer MDLM (baseline) | 56.9M | 5.689 |
+| log-Born | n/a | 6.150 |
+| bottleneck linear, $K=819$ | matched to Born | **5.756** |
+| full linear | 73.2M | 5.625 |
+| MLP head | 77.4M | 5.738 |
+
+*text8, BPE-8192, 20k steps, mean of two seeds. Masked-LM bits/token, a conditional slice, not a likelihood.*
+
+**+0.394 bits at matched parameters.** The gap is the functional form of the measurement, not head capacity.
+
+A second control sharpens it. The MLP head at 77.4M does not improve on the full linear head at 73.2M, so nonlinearity buys nothing: the information the Born rule was throwing away is *linearly* accessible in $\hat\psi$. It was being projected out three ways: phase collapse (the modulus keeps only the magnitude of each inner product), a rank-one PSD constraint (each token scored through $M_v = e(v)e(v)^{\mathsf{H}}$), and norm invariance (the Born softmax is invariant to global rescaling of $\hat\psi$, deleting a degree of freedom outright).
+
+Born-rule readouts have been advocated for language models on physical grounds. At matched capacity, in this setting, that motivation cost 0.394 bits over an ordinary linear map of the same size.
+
+## Which property of the mixer actually matters
+
+The symmetric question is whether the Schrödinger form is doing the work. Mostly it isn't. What matters is *structured complex spectral mixing*:
+
+| mixer | 4.9M bits/char | 57M bits/token |
+|---|---|---|
+| `schrod2d` (split-step) | 0.893 | 5.626 |
+| `feyn2` (structured complex, non-Schrödinger) | **0.872** | n/a |
+| `schrodfree` (free complex spectral gain) | 1.141 | 6.139 |
+| AFNO-style real spectral gate | 1.213 | 6.109 |
+
+`feyn2` is a structured complex mixer that is *not* a Schrödinger discretisation, and at char scale it slightly beats the split-step mixer. Removing unitarity or removing complex phase both degrade substantially. So the Schrödinger story is a good source of structure, not a necessary one.
+
+The constraint matters more with scale, which was the surprise. At 57M, removing unitarity costs +0.51 bits despite `schrodfree` carrying slightly *more* parameters (58.4M vs 56.9M), roughly twice the char-scale gap. Complex arithmetic alone confers no advantage; the constrained unitary dispersion is what earns the bits, at the scale where the headline comparisons live.
+
+## The 548M model
+
+Trained on 9.99B tokens of FineWeb-Edu, sequence length 512, one RTX-5090-week.
+
+| metric | value |
+|---|---|
+| generative NELBO | 5.67 bits/token (±0.05) |
+| conditional masked-LM | ~3.13 bits/token |
+
+The NELBO is the load-bearing number: a proper any-order marginal-likelihood upper bound, computed with two independent MD4 estimators that agree to 0.005 bits, so schedule-invariance holds and the bound is well-estimated. The conditional number is fill-in-the-blank quality: predict 15%-masked tokens given the other 85% as clean context. It is much lower because it is a much easier task. Both are reported because quoting only the second one would be flattering and wrong.
+
+At equal parameters the linear-head wave model matches the transformer baseline, and the wave arm is actually the smaller of the two: 547.9M against 592.7M.
+
+## What it can't do
+
+- **Not factually reliable.** It is 548M parameters. It produces plausible prose, not correct facts, and it drifts.
+- **Fixed length 512.** The dispersion coefficients are learned on the grid $k = 2\pi\,\mathrm{fftfreq}(L)$, which is tied to the training length. This does not transfer across lengths the way attention does, and it is the real structural cost of the approach.
+- **Weak precise recall.** Strong at distributed, statistical context; weak at sharp associative lookup.
+- **A phrase quirk.** It over-uses a few stock phrases picked up from the corpus. A model trait, left unsuppressed.
+
+Prior art it leans on: MDLM (Sahoo et al., 2024), D3PM and SEDD for absorbing discrete diffusion, BD3-LMs for block decoding, LLaDA and Dream for diffusion LLMs at scale, and the split-step Fourier method from nonlinear Schrödinger numerics. The [weights and demo](https://huggingface.co/tjeongggg/wave-diffusion-548m) are on Hugging Face.
