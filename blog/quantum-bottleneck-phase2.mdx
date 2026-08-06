@@ -1,11 +1,11 @@
 ---
 title: 'Phase 2: Quantum Advantage Strengthens on Real Text'
 publishedAt: '2026-04-20'
-summary: 'Moving from synthetic latents to frozen DistilBERT embeddings of text8 — and finding that the quantum advantage at n=100 grew from +63.9% to +72.9%.'
+summary: 'Moving from synthetic latents to frozen DistilBERT embeddings of text8, and finding that the quantum advantage at n=100 grew from +63.9% to +72.9%.'
 tag: 'research'
 ---
 
-Phase 1 used synthetic correlated latents — vectors designed to have structure. The honest question was whether quantum advantage survives on *real* pretrained representations, which are richer and harder to predict. Phase 2 answers that with frozen DistilBERT embeddings from text8.
+Phase 1 used synthetic correlated latents, vectors designed to have structure. The honest question was whether quantum advantage survives on *real* pretrained representations, which are richer and harder to predict. Phase 2 answers that with frozen DistilBERT embeddings from text8.
 
 **The result: quantum advantage grew. +72.9% at n=100, up from +63.9% in Phase 1.**
 
@@ -41,11 +41,11 @@ $$
 | `proj_down` | 768 → 256 | trainable |
 | quantum circuit, 8 qubits | 256 | trainable |
 | `proj_up` | 256 → 768 | trainable |
-| MSE against $h$ | 768 | — |
+| MSE against $h$ | 768 | n/a |
 
-*The quantum circuit and two projection layers are the only trainable components — ~60K parameters regardless of the base model size.*
+*The quantum circuit and two projection layers are the only trainable components, at ~60K parameters regardless of the base model size.*
 
-The encoder runs once per dataset and caches results — 60,000 text8 chunks encoded in ~19 minutes, stored as a 768-dim tensor. All subsequent training reads from disk.
+The encoder runs once per dataset and caches results: 60,000 text8 chunks encoded in ~19 minutes, stored as a 768-dim tensor. All subsequent training reads from disk.
 
 ## Sanity Check Result
 
@@ -72,14 +72,14 @@ the two phases line up like this:
 
 Three things stand out from the Phase 2 sanity check.
 
-**The advantage grew.** +72.9% on real DistilBERT embeddings vs +63.9% on synthetic latents. The original concern was that synthetic latents were too simple — purpose-built to have correlations that quantum could exploit. Real transformer representations are richer and more complex. The fact that quantum advantage *increased* is the opposite of what a skeptic would expect.
+**The advantage grew.** +72.9% on real DistilBERT embeddings vs +63.9% on synthetic latents. The original concern was that synthetic latents were too simple, purpose-built to have correlations that quantum could exploit. Real transformer representations are richer and more complex. The fact that quantum advantage *increased* is the opposite of what a skeptic would expect.
 
-**Classical overfits harder on real representations.** Classical epoch-1 val loss is 0.02086, final val loss is 0.00154 — a 13.6× drop that still leaves a 7× gap between train (0.00022) and val (0.00154). Real DistilBERT embeddings have more structure to memorize. Quantum doesn't have this problem: it ends at 0.00042 with a train/val gap of only 1.6×.
+**Classical overfits harder on real representations.** Classical epoch-1 val loss is 0.02086, final val loss is 0.00154, a 13.6× drop that still leaves a 7× gap between train (0.00022) and val (0.00154). Real DistilBERT embeddings have more structure to memorize. Quantum doesn't have this problem: it ends at 0.00042 with a train/val gap of only 1.6×.
 
-**Quantum starts below classical's final value.** By epoch 10, quantum val loss is 0.00063 — already better than classical ever gets (0.00154). The circuit structure provides a prior that's immediately well-calibrated to real language representations.
+**Quantum starts below classical's final value.** By epoch 10, quantum val loss is 0.00063, already better than classical ever gets (0.00154). The circuit structure provides a prior that's immediately well-calibrated to real language representations.
 
 ## What's Next
 
-This is a sanity check at n=100, 50 epochs. The full Phase 2 experiment runs the same n_train sweep as Phase 1 — [100, 500, 1000, 5000] — to find where the crossover lands on real text.
+This is a sanity check at n=100, 50 epochs. The full Phase 2 experiment runs the same n_train sweep as Phase 1, [100, 500, 1000, 5000], to find where the crossover lands on real text.
 
-Phase 1 crossover was at ~n=200 on synthetic latents. The hypothesis is that richer real representations push the crossover right — potentially to n=1K-5K, which is squarely in the range of real low-resource NLP tasks. That's what gets run next.
+Phase 1 crossover was at ~n=200 on synthetic latents. The hypothesis is that richer real representations push the crossover right, potentially to n=1K-5K, which is squarely in the range of real low-resource NLP tasks. That's what gets run next.

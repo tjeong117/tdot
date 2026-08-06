@@ -2,9 +2,9 @@
 /* Publish whatever is sitting in blog/.
  *
  * Drop blog/anything.md in and run `npm run publish`. Any post missing a
- * frontmatter block gets one written into the file first — title from the
+ * frontmatter block gets one written into the file first: title from the
  * opening heading or the filename, date of today, summary from the first
- * paragraph — so the published date is pinned in the file rather than
+ * paragraph, so the published date is pinned in the file rather than
  * re-derived on every build. Then it commits and pushes; Vercel deploys. */
 
 import { execFileSync } from 'node:child_process'
@@ -34,7 +34,7 @@ const changed = git('status', '--porcelain', '--', 'blog')
   .filter((f) => /\.mdx?$/.test(f))
 
 if (!changed.length) {
-  console.log('Nothing to publish — blog/ matches the last commit.')
+  console.log('Nothing to publish. blog/ matches the last commit.')
   process.exit(0)
 }
 
@@ -90,7 +90,7 @@ for (const p of posts) {
   console.log(`  ${p.wrote ? '+' : '~'} ${p.file}  "${p.title}"`)
   if (p.wrote) {
     console.log(
-      `      ${dryRun ? 'would write' : 'wrote'} frontmatter — summary: ${
+      `      ${dryRun ? 'would write' : 'wrote'} frontmatter, summary: ${
         p.summary || '(empty)'
       }`
     )

@@ -65,7 +65,7 @@ function authoredAt(filePath: string) {
     ).trim()
     if (out) return out.slice(0, 10)
   } catch {
-    // no git available (or the file is untracked) — fall through
+    // no git available (or the file is untracked), so fall through
   }
   return fs.statSync(filePath).mtime.toISOString().slice(0, 10)
 }

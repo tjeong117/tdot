@@ -6,7 +6,7 @@ import * as THREE from 'three'
 /* The site's one piece of ornament: a photograph rebuilt as a particle volume,
    sitting as a banner above the masthead. Pixels brighter than lumThreshold
    become points; brightness also pushes them toward the camera, so the nebula
-   has real depth and drifts as the pointer moves. Non-interactive by design —
+   has real depth and drifts as the pointer moves. Non-interactive by design:
    it never swallows a scroll. */
 
 type ParticleLogoProps = {
@@ -118,7 +118,7 @@ export function ParticleLogo({
       ctx.drawImage(img, 0, 0, sw, sh)
       const data = ctx.getImageData(0, 0, sw, sh).data
 
-      // only the cropped band is ever on screen, so don't pay for the rest —
+      // only the cropped band is ever on screen, so don't pay for the rest,
       // that budget buys full source resolution instead. The margin covers the
       // few rows that swing into view as the volume tilts.
       const band = neededBand()

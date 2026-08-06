@@ -1,7 +1,7 @@
 ---
 title: 'QuDDPM: Can Diffusion Models Reverse Quantum Chaos?'
 publishedAt: '2026-02-10'
-summary: 'Building a quantum denoising diffusion model to reverse information scrambling — and finding where it breaks against entanglement entropy bounds.'
+summary: 'Building a quantum denoising diffusion model to reverse information scrambling, and finding where it breaks against entanglement entropy bounds.'
 tag: 'research'
 ---
 
@@ -9,11 +9,11 @@ tag: 'research'
 
 ## The Setup
 
-In quantum mechanics, *information scrambling* is the process by which local quantum information spreads across an entire system until it becomes effectively irrecoverable from any subsystem. It's the quantum version of stirring cream into coffee — except the laws of quantum mechanics say the information isn't destroyed, just hidden.
+In quantum mechanics, *information scrambling* is the process by which local quantum information spreads across an entire system until it becomes effectively irrecoverable from any subsystem. It's the quantum version of stirring cream into coffee, except the laws of quantum mechanics say the information isn't destroyed, just hidden.
 
-This connects deeply to black hole physics. The ER=EPR conjecture links quantum entanglement to wormhole geometry, and scrambling is the mechanism by which a black hole processes information at the fastest possible rate. The *scrambling time* — how quickly information becomes inaccessible — is conjectured to be a fundamental bound of nature.
+This connects deeply to black hole physics. The ER=EPR conjecture links quantum entanglement to wormhole geometry, and scrambling is the mechanism by which a black hole processes information at the fastest possible rate. The *scrambling time*, how quickly information becomes inaccessible, is conjectured to be a fundamental bound of nature.
 
-So I asked: if I build a variational quantum circuit (a parameterized "denoiser") and train it with a diffusion-inspired curriculum, can it learn to invert the scrambling unitary $U_{\text{scr}}$? And more importantly — **where does it fail?**
+So I asked: if I build a variational quantum circuit (a parameterized "denoiser") and train it with a diffusion-inspired curriculum, can it learn to invert the scrambling unitary $U_{\text{scr}}$? And more importantly, **where does it fail?**
 
 ## How It Works
 
@@ -23,17 +23,17 @@ The architecture is a pipeline with three pieces.
 
 I implemented three scrambling methods to test against:
 
-**Random circuit unitaries** — brick-layer patterns of random $\text{SU}(4)$ gates on neighboring qubit pairs, alternating even/odd offsets per layer. The standard model for quantum chaos in circuit-based systems.
+**Random circuit unitaries**: brick-layer patterns of random $\text{SU}(4)$ gates on neighboring qubit pairs, alternating even/odd offsets per layer. The standard model for quantum chaos in circuit-based systems.
 
-**Haar-random unitaries** — completely random unitaries drawn from the Haar measure via QR decomposition. The theoretical "maximally scrambled" baseline, where:
+**Haar-random unitaries**: completely random unitaries drawn from the Haar measure via QR decomposition. The theoretical "maximally scrambled" baseline, where:
 
 $$U \sim \text{Haar}(\mathcal{U}(2^n))$$
 
-**SYK Hamiltonian evolution** — an all-to-all 4-body interaction Hamiltonian with Gaussian random couplings:
+**SYK Hamiltonian evolution**: an all-to-all 4-body interaction Hamiltonian with Gaussian random couplings:
 
 $$H_{\text{SYK}} = \sum_{i < j < k < l} J_{ijkl} \, \sigma_i \sigma_j \sigma_k \sigma_l$$
 
-where $J_{ijkl} \sim \mathcal{N}(0, J^2)$. This is the Sachdev-Ye-Kitaev model — it saturates the chaos bound and has direct connections to holographic duality. Time evolution is computed via matrix exponential:
+where $J_{ijkl} \sim \mathcal{N}(0, J^2)$. This is the Sachdev-Ye-Kitaev model, which saturates the chaos bound and has direct connections to holographic duality. Time evolution is computed via matrix exponential:
 
 $$U(t) = e^{-iHt}$$
 
@@ -43,7 +43,7 @@ The denoiser is a variational quantum circuit (the ansatz) built from alternatin
 
 $$U_{\theta} = \left[\prod_{\ell=1}^{L} \text{CNOT}_\ell \cdot R_\ell(\theta)\right] \cdot R_0(\theta)$$
 
-Each rotation layer applies $R_z(\alpha)\, R_y(\beta)\, R_z(\gamma)$ to every qubit — three parameters per qubit per layer. CNOT chains entangle neighboring qubits with alternating direction. For $n$ qubits and $L$ layers, the total parameter count is:
+Each rotation layer applies $R_z(\alpha)\, R_y(\beta)\, R_z(\gamma)$ to every qubit, three parameters per qubit per layer. CNOT chains entangle neighboring qubits with alternating direction. For $n$ qubits and $L$ layers, the total parameter count is:
 
 $$|\theta| = 3n(L + 1)$$
 
