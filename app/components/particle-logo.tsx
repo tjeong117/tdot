@@ -13,7 +13,9 @@ type ParticleLogoProps = {
   src: string
   height?: number
   worldWidth?: number // world-space width of the image plane
-  sampleWidth?: number // sampling grid width; higher = denser, slower
+  sampleWidth?: number // sampling grid width; match the source for 1:1 detail
+  pointScale?: number // sprite size relative to sample spacing; lower = crisper
+  focusY?: number // which band of the image the crop keeps (0 top, 1 bottom)
   exposure?: number
   saturation?: number
   lumThreshold?: number // pixels dimmer than this become no particle
@@ -22,12 +24,14 @@ type ParticleLogoProps = {
 
 export function ParticleLogo({
   src,
-  height = 130,
+  height = 170,
   worldWidth = 160,
-  sampleWidth = 900,
-  exposure = 0.62,
+  sampleWidth = 1400,
+  pointScale = 1.75,
+  focusY = 0.5,
+  exposure = 0.95,
   saturation = 1.1,
-  lumThreshold = 0.045,
+  lumThreshold = 0.038,
   depthScale = 0.35,
 }: ParticleLogoProps) {
   const mountRef = useRef<HTMLDivElement | null>(null)
@@ -59,6 +63,9 @@ export function ParticleLogo({
     let frameId = 0
     let imageH = W * 0.6
 
+    // how much of the image height survives the crop, as a fraction
+    let visibleFraction = 1
+
     const fitCamera = () => {
       const aspect = mount.clientWidth / mount.clientHeight
       camera.aspect = aspect
@@ -67,7 +74,12 @@ export function ParticleLogo({
       const zw = W / 2 / (tan * aspect)
       // cover, not contain: fill the strip and crop the image top and bottom,
       // otherwise a 3:2 photo in a 5:1 banner sits tiny between black bars
-      camera.position.z = Math.min(zh, zw)
+      const z = Math.min(zh, zw)
+      const visH = 2 * z * tan
+      visibleFraction = Math.min(1, visH / imageH)
+      // slide the crop window to focusY, clamped so it never leaves the image
+      const travel = Math.max(0, (imageH - visH) / 2)
+      camera.position.set(0, (0.5 - focusY) * 2 * travel, z)
       camera.updateProjectionMatrix()
     }
     fitCamera()
@@ -87,6 +99,12 @@ export function ParticleLogo({
 
     const gauss = () => Math.random() + Math.random() - 1
 
+    // the band of image rows the current framing needs, as a half-fraction
+    const neededBand = () => Math.min(0.5, visibleFraction * 0.5 * 1.25)
+
+    let points: THREE.Points | null = null
+    let builtBand = 0
+
     const buildParticles = (img: HTMLImageElement) => {
       const sw = sampleWidth
       const sh = Math.round((sw * img.height) / img.width)
@@ -100,10 +118,18 @@ export function ParticleLogo({
       ctx.drawImage(img, 0, 0, sw, sh)
       const data = ctx.getImageData(0, 0, sw, sh).data
 
+      // only the cropped band is ever on screen, so don't pay for the rest —
+      // that budget buys full source resolution instead. The margin covers the
+      // few rows that swing into view as the volume tilts.
+      const band = neededBand()
+      builtBand = band
+      const vFrom = Math.max(0, Math.floor((focusY - band) * sh))
+      const vTo = Math.min(sh, Math.ceil((focusY + band) * sh))
+
       const positions: number[] = []
       const colors: number[] = []
       const H = imageH
-      for (let v = 0; v < sh; v++) {
+      for (let v = vFrom; v < vTo; v++) {
         for (let u = 0; u < sw; u++) {
           const i = (v * sw + u) * 4
           const r = data[i] / 255
@@ -137,7 +163,7 @@ export function ParticleLogo({
       const material = new THREE.PointsMaterial({
         // three sizes points in device px from CSS height: scale by the
         // pixel ratio or retina screens render every sprite at half size
-        size: (W / sw) * 2.1 * renderer.getPixelRatio(),
+        size: (W / sw) * pointScale * renderer.getPixelRatio(),
         map: spriteTexture,
         vertexColors: true,
         transparent: true,
@@ -145,14 +171,24 @@ export function ParticleLogo({
         depthWrite: false,
         sizeAttenuation: true,
       })
+      if (points) {
+        group.remove(points)
+        points.geometry.dispose()
+        ;(points.material as THREE.Material).dispose()
+      }
       disposables.push(geometry, material)
-      group.add(new THREE.Points(geometry, material))
+      points = new THREE.Points(geometry, material)
+      group.add(points)
       mount.style.opacity = '1'
     }
 
     const img = new Image()
+    let loaded: HTMLImageElement | null = null
     img.src = src
-    img.onload = () => buildParticles(img)
+    img.onload = () => {
+      loaded = img
+      buildParticles(img)
+    }
 
     // pointer tilt + slow sway, read from the window so the banner reacts to
     // the cursor anywhere on the page
@@ -184,6 +220,9 @@ export function ParticleLogo({
     const handleResize = () => {
       fitCamera()
       renderer.setSize(mount.clientWidth, mount.clientHeight)
+      // a narrower window shows more of the image than the built band covers;
+      // rebuild rather than let empty rows show as black bars
+      if (loaded && neededBand() > builtBand + 0.01) buildParticles(loaded)
     }
     window.addEventListener('resize', handleResize)
 

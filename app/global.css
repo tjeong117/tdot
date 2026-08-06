@@ -29,7 +29,7 @@ hr {
    are built (opacity is set imperatively by the renderer). */
 .particle-logo {
   position: relative;
-  height: 130px;
+  height: 170px;
   background: #000;
   opacity: 0;
   transition: opacity 1.5s ease;
