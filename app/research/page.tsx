@@ -7,6 +7,12 @@ export const metadata = {
 
 const papers = [
   {
+    slug: 'reading-frozen-world-models',
+    title: 'Reading Frozen World Models Through Action Effects',
+    date: '2026-07',
+    pdf: '/research/reading-frozen-world-models.pdf',
+  },
+  {
     slug: 'layerskip-moe',
     title: 'LayerSkip for Mixture of Experts',
     date: '2025-01',
