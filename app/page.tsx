@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { formatDate, getBlogPosts } from 'app/blog/utils'
+import { formatDate, getBlogPosts, groupPosts } from 'app/blog/utils'
 import { papers, formatPaperDate } from 'app/research/page'
 
 export default function Page() {
@@ -7,6 +7,20 @@ export default function Page() {
     (a, b) =>
       new Date(b.metadata.publishedAt).getTime() -
       new Date(a.metadata.publishedAt).getTime()
+  )
+  const { writing, thoughts } = groupPosts(posts)
+
+  const postList = (items: typeof posts) => (
+    <ul className="entries">
+      {items.map((post) => (
+        <li key={post.slug}>
+          <Link href={`/blog/${post.slug}`}>{post.metadata.title}</Link>
+          <span className="date">
+            {formatDate(post.metadata.publishedAt, false)}
+          </span>
+        </li>
+      ))}
+    </ul>
   )
 
   return (
@@ -37,16 +51,16 @@ export default function Page() {
       <h3>
         <strong>Writing</strong>
       </h3>
-      <ul className="entries">
-        {posts.map((post) => (
-          <li key={post.slug}>
-            <Link href={`/blog/${post.slug}`}>{post.metadata.title}</Link>
-            <span className="date">
-              {formatDate(post.metadata.publishedAt, false)}
-            </span>
-          </li>
-        ))}
-      </ul>
+      {postList(writing)}
+
+      {thoughts.length > 0 && (
+        <>
+          <h3>
+            <strong>Thought pieces</strong>
+          </h3>
+          {postList(thoughts)}
+        </>
+      )}
 
       <h3>
         <strong>Research</strong>

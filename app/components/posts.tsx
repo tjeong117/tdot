@@ -1,16 +1,12 @@
 import Link from 'next/link'
-import { formatDate, getBlogPosts } from 'app/blog/utils'
+import { formatDate, getBlogPosts, groupPosts } from 'app/blog/utils'
 
-export function BlogPosts() {
-  const allBlogs = getBlogPosts().sort(
-    (a, b) =>
-      new Date(b.metadata.publishedAt).getTime() -
-      new Date(a.metadata.publishedAt).getTime()
-  )
+type Post = ReturnType<typeof getBlogPosts>[number]
 
+function List({ posts }: { posts: Post[] }) {
   return (
     <ul className="entries">
-      {allBlogs.map((post) => (
+      {posts.map((post) => (
         <li key={post.slug}>
           <Link href={`/blog/${post.slug}`}>{post.metadata.title}</Link>
           <span className="date">
@@ -19,5 +15,28 @@ export function BlogPosts() {
         </li>
       ))}
     </ul>
+  )
+}
+
+export function BlogPosts() {
+  const allBlogs = getBlogPosts().sort(
+    (a, b) =>
+      new Date(b.metadata.publishedAt).getTime() -
+      new Date(a.metadata.publishedAt).getTime()
+  )
+  const { writing, thoughts } = groupPosts(allBlogs)
+
+  return (
+    <>
+      <List posts={writing} />
+      {thoughts.length > 0 && (
+        <>
+          <h3>
+            <strong>Thought pieces</strong>
+          </h3>
+          <List posts={thoughts} />
+        </>
+      )}
+    </>
   )
 }

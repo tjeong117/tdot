@@ -70,6 +70,34 @@ function authoredAt(filePath: string) {
   return fs.statSync(filePath).mtime.toISOString().slice(0, 10)
 }
 
+/* Posts split into two lists by their frontmatter tag. Anything that reads as
+   a thought piece lands in that section; everything else, tagged or not, is
+   Writing. Spellings are forgiving on purpose so a post is never silently
+   filed in the wrong place over a plural. */
+const THOUGHT_TAGS = new Set([
+  'thought',
+  'thoughts',
+  'thought piece',
+  'thought pieces',
+  'thoughtpiece',
+  'thoughtpieces',
+  'essay',
+  'essays',
+  'personal',
+])
+
+export function sectionOf(tag?: string) {
+  const key = tag?.trim().toLowerCase().replace(/[-_]+/g, ' ')
+  return key && THOUGHT_TAGS.has(key) ? 'thoughts' : 'writing'
+}
+
+export function groupPosts<T extends { metadata: { tag?: string } }>(posts: T[]) {
+  return {
+    writing: posts.filter((p) => sectionOf(p.metadata.tag) === 'writing'),
+    thoughts: posts.filter((p) => sectionOf(p.metadata.tag) === 'thoughts'),
+  }
+}
+
 function getPostFiles(dir: string) {
   if (!fs.existsSync(dir)) return []
   return fs
