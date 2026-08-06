@@ -1,315 +1,134 @@
-@import 'tailwindcss';
-
-/* Event Horizon theme — palette lifted from the black hole hero's accretion disk */
-::selection {
-  background-color: #c9a24b;
-  color: #0c0a06;
-}
-
-:root {
-  --eh-gold: #8a6117;
-  --eh-gold-bright: #b8862c;
-  --eh-pill-bg: #f8f1df;
-  --eh-pill-text: #8a6117;
-  --eh-pill-ring: rgba(201, 162, 75, 0.45);
-  --sh-class: #2d5e9d;
-  --sh-identifier: #354150;
-  --sh-sign: #8996a3;
-  --sh-string: #007f7a;
-  --sh-keyword: #e02518;
-  --sh-comment: #a19595;
-  --sh-jsxliterals: #6266d1;
-  --sh-property: #e25a1c;
-  --sh-entity: #e25a1c;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --eh-gold: #e3b264;
-    --eh-gold-bright: #ffc46b;
-    --eh-pill-bg: rgba(255, 196, 107, 0.08);
-    --eh-pill-text: #e9c07a;
-    --eh-pill-ring: rgba(255, 196, 107, 0.28);
-    --sh-class: #4c97f8;
-    --sh-identifier: white;
-    --sh-keyword: #f47067;
-    --sh-string: #0fa295;
-  }
-  html {
-    color-scheme: dark;
-  }
-  /* Faint starfield + warm horizon glow behind all content, echoing the hero */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    z-index: -1;
-    pointer-events: none;
-    background-image: radial-gradient(
-        900px 420px at 50% -60px,
-        rgba(255, 196, 107, 0.05),
-        transparent 70%
-      ),
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cg fill='%23ffffff'%3E%3Ccircle cx='17' cy='36' r='0.8' opacity='.28'/%3E%3Ccircle cx='63' cy='11' r='0.6' opacity='.18'/%3E%3Ccircle cx='104' cy='58' r='0.9' opacity='.24'/%3E%3Ccircle cx='151' cy='24' r='0.5' opacity='.16'/%3E%3Ccircle cx='196' cy='73' r='0.7' opacity='.22'/%3E%3Ccircle cx='38' cy='104' r='0.6' opacity='.18'/%3E%3Ccircle cx='87' cy='139' r='0.8' opacity='.26'/%3E%3Ccircle cx='139' cy='112' r='0.5' opacity='.15'/%3E%3Ccircle cx='183' cy='151' r='0.9' opacity='.22'/%3E%3Ccircle cx='226' cy='118' r='0.5' opacity='.14'/%3E%3Ccircle cx='22' cy='176' r='0.7' opacity='.2'/%3E%3Ccircle cx='68' cy='212' r='0.5' opacity='.15'/%3E%3Ccircle cx='121' cy='188' r='0.8' opacity='.24'/%3E%3Ccircle cx='171' cy='226' r='0.6' opacity='.17'/%3E%3Ccircle cx='213' cy='196' r='0.5' opacity='.14'/%3E%3C/g%3E%3Cg fill='%23ffc46b'%3E%3Ccircle cx='132' cy='16' r='0.7' opacity='.2'/%3E%3Ccircle cx='51' cy='158' r='0.6' opacity='.18'/%3E%3C/g%3E%3C/svg%3E");
-    background-repeat: no-repeat, repeat;
-  }
-}
-
-/* Telemetry type for dates and metadata */
-.font-readout {
-  font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo,
-    monospace;
-  font-size: 0.8125rem;
-  letter-spacing: -0.01em;
-}
-
-/* Photon-ring rule under section headings: a hairline that fades out */
-.ring-rule {
-  position: relative;
-  padding-bottom: 0.5rem;
-}
-.ring-rule::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  height: 1px;
-  width: 6rem;
-  background: linear-gradient(90deg, var(--eh-gold), transparent);
-  opacity: 0.6;
-}
-
-/* Accretion-gold tag pill */
-.eh-pill {
-  background: var(--eh-pill-bg);
-  color: var(--eh-pill-text);
-  box-shadow: inset 0 0 0 1px var(--eh-pill-ring);
-}
-
-/* Steel pill for misc tags */
-.eh-pill-muted {
-  background: rgba(122, 134, 150, 0.1);
-  color: #5c6672;
-  box-shadow: inset 0 0 0 1px rgba(122, 134, 150, 0.35);
-}
-@media (prefers-color-scheme: dark) {
-  .eh-pill-muted {
-    background: rgba(185, 194, 207, 0.07);
-    color: #a7b1bf;
-    box-shadow: inset 0 0 0 1px rgba(185, 194, 207, 0.22);
-  }
-}
-
-/* Caption under the wordmark fades in when the scene morphs */
-.caption-fade {
-  animation: eh-caption 0.7s ease;
-}
-@keyframes eh-caption {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-}
-
-/* The sky card's panel: the theme starfield, fading in like the canvases */
-.panel-starfield {
-  background-color: #000;
-  animation: eh-fadein 1.4s ease both;
-}
-@keyframes eh-fadein {
-  from {
-    opacity: 0;
-  }
-}
-
-/* Section index under the wordmark: the card you're on burns gold */
-.section-link {
-  color: rgba(190, 190, 190, 0.55);
-  transition:
-    color 0.35s ease,
-    opacity 0.35s ease;
-}
-.section-link:hover {
-  color: rgba(255, 255, 255, 0.85);
-}
-.section-link-active,
-.section-link-active:hover {
-  color: #e3b264;
-}
-
-/* Home scroll rail: cards lift and light up as they enter the viewport */
-.home-card {
-  opacity: 0.25;
-  transform: translateY(28px) scale(0.97);
-  transition:
-    opacity 0.55s ease,
-    transform 0.55s ease;
-}
-.home-card.card-active {
-  opacity: 1;
-  transform: none;
-}
-
-/* Section rail on the home scroll: one tick per card, gold when active */
-.rail-tick {
-  display: block;
-  height: 2px;
-  width: 12px;
-  border-radius: 1px;
-  background: rgba(190, 190, 190, 0.35);
-  transition:
-    width 0.3s ease,
-    background-color 0.3s ease;
-}
-button:hover > .rail-tick {
-  background: rgba(255, 255, 255, 0.75);
-}
-.rail-tick.rail-tick-active {
-  width: 22px;
-  background: #e3b264;
-}
-
-/* Timeline slider on the collision sim */
-.eh-range {
-  accent-color: #e3b264;
-}
-
-/* Gold hover for nav/footer links; -bright variant for the always-dark hero */
-.eh-hover {
-  transition: color 0.15s;
-}
-.eh-hover:hover {
-  color: var(--eh-gold);
-}
-.eh-hover-bright {
-  transition: color 0.15s;
-}
-.eh-hover-bright:hover {
-  color: #ffc46b;
-}
-
-/* Content links underline in gold */
-a.underline {
-  text-decoration-color: color-mix(in srgb, var(--eh-gold) 50%, transparent);
-  text-underline-offset: 3px;
-  transition: text-decoration-color 0.15s;
-}
-a.underline:hover {
-  text-decoration-color: var(--eh-gold);
-}
+/* No font-family anywhere: the browser's default serif is the design. */
 
 html {
-  min-width: 360px;
+  scrollbar-gutter: stable;
 }
 
-.prose .anchor {
-  @apply absolute invisible no-underline;
-
-  margin-left: -1em;
-  padding-right: 0.5em;
-  width: 80%;
-  max-width: 700px;
-  cursor: pointer;
+body {
+  line-height: 1.4;
+  font-size: 16px;
+  padding: 0 10px;
+  margin: 40px auto;
+  max-width: 650px;
 }
 
-.anchor:hover {
-  @apply visible;
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 20px auto;
 }
 
-.prose a {
-  @apply underline transition-all underline-offset-2 decoration-[0.1em];
-  text-decoration-color: color-mix(in srgb, var(--eh-gold) 45%, transparent);
+hr {
+  border: none;
+  border-top: 1px solid #ddd;
+  margin: 30px 0;
 }
 
-.prose a:hover {
-  text-decoration-color: var(--eh-gold);
+/* The particle banner. Black box, no interaction, fades in once the points
+   are built (opacity is set imperatively by the renderer). */
+.particle-logo {
+  position: relative;
+  height: 130px;
+  background: #000;
+  opacity: 0;
+  transition: opacity 1.5s ease;
+  overflow: hidden;
+}
+.particle-logo canvas {
+  display: block;
 }
 
-.prose .anchor:after {
-  @apply text-neutral-300 dark:text-neutral-700;
-  content: '#';
+/* Lists of links — posts, papers */
+.entries {
+  list-style: none;
+  padding: 0;
+}
+.entries li {
+  margin: 6px 0;
+}
+.entries .date {
+  color: #555;
+  font-size: 14px;
+  margin-left: 8px;
+  white-space: nowrap;
 }
 
-.prose *:hover > .anchor {
-  @apply visible;
+.site-footer {
+  margin: 60px 0 30px;
+  padding-top: 18px;
+  border-top: 1px solid #ddd;
+  font-size: 14px;
+  color: #555;
+}
+.site-footer a {
+  color: inherit;
+}
+.site-footer p {
+  margin: 8px 0 0;
 }
 
-.prose pre {
-  @apply bg-neutral-50 dark:bg-neutral-900 rounded-lg overflow-x-auto border border-neutral-200 dark:border-neutral-900 py-2 px-3 text-sm;
-}
-
-.prose code {
-  @apply px-1 py-0.5 rounded-lg;
-}
-
-.prose pre code {
-  @apply p-0;
-  border: initial;
+/* MDX posts */
+article pre {
+  overflow-x: auto;
+  padding: 12px;
+  background: #f6f6f6;
+  font-size: 14px;
   line-height: 1.5;
 }
-
-.prose code span {
-  @apply font-medium;
+article pre code {
+  padding: 0;
+  background: none;
+}
+article code {
+  background: #f6f6f6;
+  padding: 1px 4px;
+  font-size: 14px;
+}
+article h1,
+article h2,
+article h3,
+article h4 {
+  margin-top: 28px;
+}
+.anchor {
+  color: inherit;
+  text-decoration: none;
+}
+.anchor:hover {
+  text-decoration: underline;
 }
 
-.prose img {
-  /* Don't apply styles to next/image */
-  @apply m-0;
+p.date {
+  color: #555;
+  font-size: 14px;
+  margin-top: -8px;
 }
 
-.prose p {
-  @apply my-4 text-neutral-800 dark:text-neutral-200;
+/* Paper viewer */
+.pdf-viewer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
 }
-
-.prose h1 {
-  @apply text-4xl font-medium tracking-tight mt-6 mb-2;
+.pdf-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 14px;
+  color: #555;
 }
-
-.prose h2 {
-  @apply text-xl font-medium tracking-tight mt-6 mb-2;
+.pdf-controls button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
 }
-
-.prose h3 {
-  @apply text-xl font-medium tracking-tight mt-6 mb-2;
-}
-
-.prose h4 {
-  @apply text-lg font-medium tracking-tight mt-6 mb-2;
-}
-
-.prose strong {
-  @apply font-medium;
-}
-
-.prose ul {
-  @apply list-disc pl-6;
-}
-
-.prose ol {
-  @apply list-decimal pl-6;
-}
-
-.prose > :first-child {
-  /* Override removing top margin, causing layout shift */
-  margin-top: 1.25em !important;
-  margin-bottom: 1.25em !important;
-}
-
-pre::-webkit-scrollbar {
-  display: none;
-}
-
-pre {
-  -ms-overflow-style: none; /* IE and Edge */
-  scrollbar-width: none; /* Firefox */
-}
-
-/* Remove Safari input shadow on mobile */
-input[type='text'],
-input[type='email'] {
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
+.pdf-controls button:disabled {
+  opacity: 0.3;
+  cursor: default;
 }
 
 table {
@@ -319,6 +138,15 @@ table {
   white-space: nowrap;
 }
 
-.title {
-  text-wrap: balance;
+/* sugar-high tokens for fenced code in posts */
+:root {
+  --sh-class: #2d5e9d;
+  --sh-identifier: #354150;
+  --sh-sign: #8996a3;
+  --sh-string: #007f7a;
+  --sh-keyword: #e02518;
+  --sh-comment: #a19595;
+  --sh-jsxliterals: #6266d1;
+  --sh-property: #e25a1c;
+  --sh-entity: #e25a1c;
 }

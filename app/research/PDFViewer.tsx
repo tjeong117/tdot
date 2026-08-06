@@ -16,18 +16,17 @@ export default function PDFViewer({ url }: Props) {
   const [pageNumber, setPageNumber] = useState(1)
 
   return (
-    <div className="flex flex-col items-center gap-4">
+    <div className="pdf-viewer">
       <Document
         file={url}
         onLoadSuccess={({ numPages }) => setNumPages(numPages)}
       >
-        <Page pageNumber={pageNumber} width={700} />
+        <Page pageNumber={pageNumber} width={630} />
       </Document>
-      <div className="flex items-center gap-4 text-sm text-neutral-600 dark:text-neutral-400">
+      <div className="pdf-controls">
         <button
           onClick={() => setPageNumber((p) => Math.max(1, p - 1))}
           disabled={pageNumber <= 1}
-          className="disabled:opacity-30 hover:text-neutral-900 dark:hover:text-neutral-100"
         >
           ← prev
         </button>
@@ -37,7 +36,6 @@ export default function PDFViewer({ url }: Props) {
         <button
           onClick={() => setPageNumber((p) => Math.min(numPages, p + 1))}
           disabled={pageNumber >= numPages}
-          className="disabled:opacity-30 hover:text-neutral-900 dark:hover:text-neutral-100"
         >
           next →
         </button>

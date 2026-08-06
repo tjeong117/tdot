@@ -1,23 +1,19 @@
 import { getBlogPosts } from 'app/blog/utils'
-import { ARTIFACTS } from 'app/nebula/[slug]/page'
+import { papers } from 'app/research/page'
 
 export const baseUrl = 'https://portfolio-blog-starter.vercel.app'
 
 export default async function sitemap() {
-  let blogs = getBlogPosts().map((post) => ({
+  const blogs = getBlogPosts().map((post) => ({
     url: `${baseUrl}/blog/${post.slug}`,
     lastModified: post.metadata.publishedAt,
   }))
 
-  let routes = [
+  const routes = [
     '',
     '/blog',
     '/research',
-    '/sky',
-    '/misc',
-    '/blackhole',
-    '/collision',
-    ...Object.keys(ARTIFACTS).map((slug) => `/nebula/${slug}`),
+    ...papers.map((paper) => `/research/${paper.slug}`),
   ].map((route) => ({
     url: `${baseUrl}${route}`,
     lastModified: new Date().toISOString().split('T')[0],

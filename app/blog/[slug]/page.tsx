@@ -79,20 +79,16 @@ export default async function Blog({ params }) {
             url: `${baseUrl}/blog/${post.slug}`,
             author: {
               '@type': 'Person',
-              name: 'My Portfolio',
+              name: 'Tom Jeong',
             },
           }),
         }}
       />
-      <h1 className="title font-semibold text-2xl tracking-tighter">
-        {post.metadata.title}
-      </h1>
-      <div className="flex justify-between items-center mt-2 mb-8 text-sm">
-        <p className="font-readout text-neutral-600 dark:text-neutral-400">
-          {formatDate(post.metadata.publishedAt)}
-        </p>
-      </div>
-      <article className="prose">
+      <h2>
+        <strong>{post.metadata.title}</strong>
+      </h2>
+      <p className="date">{formatDate(post.metadata.publishedAt)}</p>
+      <article>
         <CustomMDX source={post.content} />
       </article>
     </section>

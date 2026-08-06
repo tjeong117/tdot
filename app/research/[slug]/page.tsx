@@ -14,7 +14,9 @@ export default async function PaperPage({ params }: { params: Promise<{ slug: st
 
   return (
     <section>
-      <h1 className="font-semibold text-2xl mb-8 tracking-tighter">{paper.title}</h1>
+      <h2>
+        <strong>{paper.title}</strong>
+      </h2>
       <PDFViewerWrapper url={paper.pdf} />
     </section>
   )

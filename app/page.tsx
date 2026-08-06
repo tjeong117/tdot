@@ -1,21 +1,6 @@
 import Link from 'next/link'
-import { HomeShell, type IndexEntry, type Scene } from 'app/components/home-shell'
-import { ARTIFACTS } from 'app/nebula/[slug]/page'
 import { formatDate, getBlogPosts } from 'app/blog/utils'
 import { papers, formatPaperDate } from 'app/research/page'
-
-const cardShell =
-  'home-card w-full max-w-md p-6 [text-shadow:0_1px_3px_rgba(0,0,0,0.9)] max-md:rounded-2xl max-md:bg-black/45 max-md:backdrop-blur-sm'
-
-function Card({ children }: { children: React.ReactNode }) {
-  return (
-    <section className="flex min-h-full snap-start items-center justify-center px-6 py-10 md:px-12">
-      <div data-card className={cardShell}>
-        {children}
-      </div>
-    </section>
-  )
-}
 
 export default function Page() {
   const posts = getBlogPosts().sort(
@@ -24,208 +9,82 @@ export default function Page() {
       new Date(a.metadata.publishedAt).getTime()
   )
 
-  const artifacts = Object.entries(ARTIFACTS)
-  // one scene per card, in card order: the left panel morphs to match.
-  // the written cards come first on one steady backdrop; the images run last.
-  const scenes: Scene[] = [
-    { key: 'butterfly', src: '/misc/butterfly.jpg', label: 'about' },
-    { key: 'butterfly', src: '/misc/butterfly.jpg', label: 'research' },
-    { key: 'butterfly', src: '/misc/butterfly.jpg', label: 'blogs' },
-    ...artifacts.map(([slug, a]) => ({
-      key: slug,
-      src: typeof a.options.src === 'string' ? a.options.src : a.options.src.landscape,
-      label: 'images',
-    })),
-    { key: 'accretion', src: '/misc/blackhole-src.jpg', label: 'images' },
-    { key: 'sky', src: null, label: 'images' },
-    { key: 'sky', src: null, label: 'images' },
-  ]
-
-  // the index, in its own order: destinations first, the image tour last
-  const index: IndexEntry[] = [
-    { label: 'about', section: 'about' },
-    { label: 'research', section: 'research' },
-    { label: 'blogs', section: 'blogs' },
-    {
-      socials: [
-        { label: 'github', href: 'https://github.com/tjeong117' },
-        { label: 'linkedin', href: 'https://www.linkedin.com/in/tomwsjeong' },
-      ],
-    },
-    { label: 'images', section: 'images' },
-  ]
-
   return (
-    <HomeShell scenes={scenes} index={index}>
-      <Card>
-        <p className="font-readout mb-4 text-neutral-500">hello</p>
-        <p className="mb-4 text-neutral-200">
-          {`Hi, I'm Tom — a founding member of technical staff at Refresh. Previously I was co-founder and CTO of `}
-          <a
-            href="https://datafruit.ai"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline"
-          >
-            Datafruit
-          </a>
-          {` (`}
-          <a
-            href="https://www.ycombinator.com/companies/datafruit"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline"
-          >
-            YC S25
-          </a>
-          {`), and before that I studied CS and Mathematics at Georgia Tech.`}
-        </p>
-        <nav className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-neutral-200">
-          <Link href="/blog" className="eh-hover-bright">
-            blog
-          </Link>
-          <Link href="/research" className="eh-hover-bright">
-            research
-          </Link>
-          <Link href="/misc" className="eh-hover-bright">
-            misc
-          </Link>
-          <Link href="/sky" className="eh-hover-bright">
-            sky
-          </Link>
-          <a
-            href="https://www.linkedin.com/in/tomwsjeong"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="eh-hover-bright"
-          >
-            linkedin
-          </a>
-          <a
-            href="https://cal.com/jeong-tom-cqkvqm/15min"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="eh-hover-bright"
-          >
-            book a call
-          </a>
-        </nav>
-        <p className="font-readout mt-6 text-neutral-500">scroll ↓</p>
-      </Card>
+    <>
+      <h2>
+        <strong>Tom Jeong</strong>
+      </h2>
+      <p>
+        {`I'm a founding member of technical staff at Refresh. Previously I was co-founder and CTO of `}
+        <a href="https://datafruit.ai" target="_blank" rel="noopener noreferrer">
+          Datafruit
+        </a>
+        {` (`}
+        <a
+          href="https://www.ycombinator.com/companies/datafruit"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          YC S25
+        </a>
+        {`), and before that I studied CS and Mathematics at Georgia Tech.`}
+      </p>
 
-      <Card>
-        <h2 className="ring-rule mb-4 text-xl font-semibold tracking-tighter">
-          Research
-        </h2>
-        {papers.map((paper) => (
-          <Link
-            key={paper.slug}
-            href={`/research/${paper.slug}`}
-            className="mb-3 block"
-          >
-            <p className="font-readout text-neutral-400">
-              {formatPaperDate(paper.date)}
-            </p>
-            <p className="text-neutral-100">{paper.title}</p>
-          </Link>
-        ))}
-      </Card>
-
-      <Card>
-        <h2 className="ring-rule mb-4 text-xl font-semibold tracking-tighter">
-          Blog
-        </h2>
+      <h3>
+        <strong>Writing</strong>
+      </h3>
+      <ul className="entries">
         {posts.map((post) => (
-          <Link
-            key={post.slug}
-            href={`/blog/${post.slug}`}
-            className="mb-3 block"
-          >
-            <p className="font-readout text-neutral-400">
+          <li key={post.slug}>
+            <Link href={`/blog/${post.slug}`}>{post.metadata.title}</Link>
+            <span className="date">
               {formatDate(post.metadata.publishedAt, false)}
-            </p>
-            <p className="text-neutral-100">{post.metadata.title}</p>
-          </Link>
+            </span>
+          </li>
         ))}
-        <div className="mt-8 flex gap-5 text-neutral-400">
-          <a
-            href="https://github.com/tjeong117"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="eh-hover-bright"
-          >
-            github
-          </a>
-          <a
-            href="https://linkedin.com/in/tomwsjeong"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="eh-hover-bright"
-          >
-            linkedin
-          </a>
-        </div>
-      </Card>
+      </ul>
 
-      {artifacts.map(([slug, artifact]) => (
-        <Card key={slug}>
-          <Link href={`/nebula/${slug}`} className="group block">
-            <h2 className="ring-rule mb-3 text-xl font-semibold tracking-tighter">
-              {artifact.title}
-            </h2>
-            <p className="mb-3 text-sm text-neutral-300">{artifact.blurb}</p>
-            <p className="font-readout text-neutral-400 group-hover:text-neutral-200 transition-colors">
-              explore in particles →
-            </p>
-          </Link>
-        </Card>
-      ))}
+      <h3>
+        <strong>Research</strong>
+      </h3>
+      <ul className="entries">
+        {papers.map((paper) => (
+          <li key={paper.slug}>
+            <Link href={`/research/${paper.slug}`}>{paper.title}</Link>
+            <span className="date">{formatPaperDate(paper.date)}</span>
+          </li>
+        ))}
+      </ul>
 
-      <Card>
-        <Link href="/blackhole" className="group block">
-          <h2 className="ring-rule mb-3 text-xl font-semibold tracking-tighter">
-            Accretion
-          </h2>
-          <p className="mb-3 text-sm text-neutral-300">
-            {`A true 3D black hole seeded from NASA's visualization — Keplerian orbits, live Doppler beaming, and a lensed halo that follows your eye.`}
-          </p>
-          <p className="font-readout text-neutral-400 group-hover:text-neutral-200 transition-colors">
-            drag to orbit →
-          </p>
-        </Link>
-      </Card>
+      <hr />
 
-      <Card>
-        <Link href="/collision" className="group block">
-          <h2 className="ring-rule mb-3 text-xl font-semibold tracking-tighter">
-            Collision
-          </h2>
-          <p className="mb-3 text-sm text-neutral-300">
-            {`The Milky Way–Andromeda merger, simulated live in your browser — twenty-six thousand stars thrown into tidal tails over six billion years, on a timeline you can scrub.`}
-          </p>
-          <p className="font-readout text-neutral-400 group-hover:text-neutral-200 transition-colors">
-            press play →
-          </p>
-        </Link>
-      </Card>
-
-      <Card>
-        <Link href="/sky" className="group block">
-          <h2 className="ring-rule mb-3 text-xl font-semibold tracking-tighter">
-            Constellation Atlas
-          </h2>
-          <p className="mb-3 text-sm text-neutral-300">
-            {`Two thousand real stars at their true positions, colored by temperature, with all 88 classical figures — the gods' hands — traced in gold.`}
-          </p>
-          <p className="font-readout text-neutral-400 group-hover:text-neutral-200 transition-colors">
-            drag to pan the sky →
-          </p>
-        </Link>
-        <p className="font-readout mt-8 text-neutral-500">
-          © {new Date().getFullYear()} tom jeong
-        </p>
-      </Card>
-
-    </HomeShell>
+      <p>
+        {`You can find me on `}
+        <a
+          href="https://github.com/tjeong117"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          GitHub
+        </a>
+        {` and `}
+        <a
+          href="https://www.linkedin.com/in/tomwsjeong"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          LinkedIn
+        </a>
+        {`, or `}
+        <a
+          href="https://cal.com/jeong-tom-cqkvqm/15min"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          book a call
+        </a>
+        {`.`}
+      </p>
+    </>
   )
 }
