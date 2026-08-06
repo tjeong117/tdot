@@ -136,6 +136,29 @@ table {
   max-width: fit-content;
   overflow-x: auto;
   white-space: nowrap;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 15px;
+}
+th,
+td {
+  padding: 5px 14px 5px 0;
+  text-align: left;
+}
+th {
+  border-bottom: 1px solid #ccc;
+  font-weight: bold;
+}
+td {
+  border-bottom: 1px solid #eee;
+}
+
+/* KaTeX: give display math room, and let long expressions scroll */
+.katex-display {
+  margin: 20px 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 2px 0;
 }
 
 /* sugar-high tokens for fenced code in posts */
