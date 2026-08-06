@@ -15,7 +15,11 @@ export default function Page() {
         <strong>Tom Jeong</strong>
       </h2>
       <p>
-        {`I'm a founding member of technical staff at Refresh. Previously I was co-founder and CTO of `}
+        {`I'm a Founding MTS at `}
+        <a href="https://refresh.dev" target="_blank" rel="noopener noreferrer">
+          Refresh
+        </a>
+        {`. Previously I was co-founder and CTO of `}
         <a href="https://datafruit.ai" target="_blank" rel="noopener noreferrer">
           Datafruit
         </a>
