@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import { Back } from 'app/components/back'
 import { CustomMDX } from 'app/components/mdx'
 import { formatDate, getBlogPosts } from 'app/blog/utils'
 import { baseUrl } from 'app/sitemap'
@@ -84,6 +85,7 @@ export default async function Blog({ params }) {
           }),
         }}
       />
+      <Back />
       <h2>
         <strong>{post.metadata.title}</strong>
       </h2>

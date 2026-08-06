@@ -49,6 +49,25 @@ hr {
   display: block;
 }
 
+/* Back to home, at the top of every page that isn't home */
+.back {
+  display: inline-block;
+  margin: 14px 0 0;
+  color: #666;
+  font-size: 14px;
+  text-decoration: none;
+}
+.back:hover {
+  color: #000;
+}
+.back-arrow {
+  display: inline-block;
+  transition: transform 0.15s ease;
+}
+.back:hover .back-arrow {
+  transform: translateX(-3px);
+}
+
 /* Lists of links — posts, papers */
 .entries {
   list-style: none;

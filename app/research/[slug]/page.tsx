@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import { Back } from 'app/components/back'
 import { papers } from '../page'
 import PDFViewerWrapper from '../PDFViewerWrapper'
 
@@ -14,6 +15,7 @@ export default async function PaperPage({ params }: { params: Promise<{ slug: st
 
   return (
     <section>
+      <Back />
       <h2>
         <strong>{paper.title}</strong>
       </h2>

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { Back } from 'app/components/back'
 
 export const metadata = {
   title: 'Research',
@@ -27,6 +28,7 @@ export function formatPaperDate(date: string) {
 export default function ResearchPage() {
   return (
     <section>
+      <Back />
       <h2>
         <strong>Research</strong>
       </h2>

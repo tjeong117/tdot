@@ -1,6 +1,9 @@
+import { Back } from 'app/components/back'
+
 export default function NotFound() {
   return (
     <section>
+      <Back />
       <h2>
         <strong>404 — Page Not Found</strong>
       </h2>

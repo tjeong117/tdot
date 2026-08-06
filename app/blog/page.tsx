@@ -1,3 +1,4 @@
+import { Back } from 'app/components/back'
 import { BlogPosts } from 'app/components/posts'
 
 export const metadata = {
@@ -8,6 +9,7 @@ export const metadata = {
 export default function Page() {
   return (
     <section>
+      <Back />
       <h2>
         <strong>Writing</strong>
       </h2>
