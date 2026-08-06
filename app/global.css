@@ -5,7 +5,7 @@ html {
 }
 
 body {
-  line-height: 1.4;
+  line-height: 1.6;
   font-size: 16px;
   padding: 0 10px;
   margin: 40px auto;
@@ -97,7 +97,11 @@ hr {
   margin: 8px 0 0;
 }
 
-/* MDX posts */
+/* MDX posts keep the tighter measure — long-form reads better set close */
+article {
+  line-height: 1.4;
+}
+
 article pre {
   overflow-x: auto;
   padding: 12px;
